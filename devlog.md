@@ -70,3 +70,51 @@ DEVLOG.md is the technical history of the application:
 
 - Add web conversation memory using Streamlit Session State.
 
+
+# Session 5
+
+
+
+## Changes made
+
+
+
+- Added Streamlit Session State.
+
+- Added OpenAI conversation continuity using `previous_response_id`.
+
+- Replaced the text area and button interface with chat components.
+
+- Added visible user and assistant message history.
+
+- Added an automatically clearing chat input.
+
+
+
+## Bugs fixed
+
+
+
+- Fixed incorrect indentation that caused `client` to be undefined.
+
+- Corrected the placement of the OpenAI request and response handling.
+
+
+
+## Current limitations
+
+
+
+- Conversation history lasts only for the current browser session.
+
+- There is no New Conversation button yet.
+
+- Vehicle details are not yet persisted in the deployed web application.
+
+
+
+## Next development step
+
+
+
+- Add a sidebar with vehicle details and a New Conversation button.

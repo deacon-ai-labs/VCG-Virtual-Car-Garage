@@ -88,3 +88,44 @@ DEVLOG.md is the technical history of the application:
 
 
 - How can a Streamlit app remember previous messages?
+
+
+# Session 5
+
+
+
+## What I learned
+
+
+
+- Streamlit reruns the Python script after user interaction.
+
+- Session State stores information for one visitor's browser session.
+
+- OpenAI conversation memory and visible chat history are separate things.
+
+- `st.chat_input()` clears automatically after submission.
+
+- `st.chat_message()` displays a conversation in a chat-style interface.
+
+
+
+## What I found difficult
+
+
+
+- Python indentation controls which code belongs inside an `if`, `else`, or `with` block.
+
+- A variable can produce a NameError if code using it runs outside the block where it was created.
+
+
+
+## Questions I still have
+
+
+
+- How long does Streamlit Session State last?
+
+- How do we add a New Conversation button?
+
+- How do we remember a vehicle after the browser session ends?

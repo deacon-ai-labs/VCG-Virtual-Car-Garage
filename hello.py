@@ -1,1 +1,0 @@
-print("Car Garage AI development environment is working")

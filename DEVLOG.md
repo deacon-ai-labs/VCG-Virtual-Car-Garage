@@ -31,3 +31,42 @@ DEVLOG.md is the technical history of the application:
 
 
 - Allow the user to edit the saved vehicle profile.
+
+# Session 4B
+
+
+
+## Changes made
+
+
+
+- Connected the Streamlit interface to the OpenAI Responses API.
+
+- Added a vehicle-problem text area.
+
+- Added the Ask Garage AI button.
+
+- Added empty-input validation.
+
+- Added a loading spinner.
+
+- Displayed the AI response in the web page.
+
+
+
+## Current limitation
+
+
+
+- Each request is independent.
+
+- The web application does not yet preserve conversation history.
+
+
+
+## Next development step
+
+
+
+- Add web conversation memory using Streamlit Session State.
+

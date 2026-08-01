@@ -7,7 +7,6 @@ client = OpenAI()
 
 
 
-
 def ask_ai(user_input, vehicle_description, previous_response_id):
 
     """

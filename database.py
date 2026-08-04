@@ -1,0 +1,97 @@
+import os
+
+
+
+from supabase import Client, create_client
+
+
+
+
+
+def get_supabase_client() -> Client:
+
+    """Create and return a Supabase client."""
+
+
+
+    supabase_url = os.environ.get("SUPABASE_URL")
+
+    supabase_key = os.environ.get("SUPABASE_KEY")
+
+
+
+    if not supabase_url or not supabase_key:
+
+        raise RuntimeError(
+
+            "SUPABASE_URL and SUPABASE_KEY must be configured."
+
+        )
+
+
+
+    return create_client(supabase_url, supabase_key)
+
+
+
+
+
+def get_vehicles() -> list[dict]:
+
+    """Return all saved vehicles, ordered by profile name."""
+
+
+
+    client = get_supabase_client()
+
+
+
+    response = (
+
+        client.table("vehicles")
+
+        .select("*")
+
+        .order("profile_name")
+
+        .execute()
+
+    )
+
+
+
+    return response.data
+
+
+
+
+
+def add_vehicle(vehicle: dict) -> dict:
+
+    """Insert one vehicle and return the saved database row."""
+
+
+
+    client = get_supabase_client()
+
+
+
+    response = (
+
+        client.table("vehicles")
+
+        .insert(vehicle)
+
+        .execute()
+
+    )
+
+
+
+    if not response.data:
+
+        raise RuntimeError("Supabase did not return the saved vehicle.")
+
+
+
+    return response.data[0]

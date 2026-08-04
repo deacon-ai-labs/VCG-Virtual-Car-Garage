@@ -118,3 +118,67 @@ DEVLOG.md is the technical history of the application:
 
 
 - Add a sidebar with vehicle details and a New Conversation button.
+
+# Session 6
+
+
+
+## Changes made
+
+
+
+- Created a Supabase project.
+
+- Created the PostgreSQL vehicles table.
+
+- Enabled Row Level Security.
+
+- Added temporary prototype read and insert policies.
+
+- Added the Supabase Python dependency.
+
+- Added database.py.
+
+- Connected Codespaces to Supabase using environment secrets.
+
+- Saved and retrieved the first vehicle profile.
+
+
+
+## Security limitation
+
+
+
+- The prototype currently uses anonymous access.
+
+- Vehicle rows are not yet separated by authenticated user.
+
+- The public URL should remain limited to trusted testers.
+
+
+
+## Next development step
+
+
+
+- Connect the Streamlit sidebar to Supabase.
+
+- Add vehicle selection.
+
+- Pass the active vehicle profile into Garage AI.
+
+- Add authentication and user-owned rows before wider sharing.
+
+Then:
+
+git status
+
+git add requirements.txt database.py test_database.py LEARNING.md DEVLOG.md
+
+git commit -m "Add Supabase vehicle database"
+
+git pull --rebase
+
+git push
+
+Do not commit any .env, secrets.toml, database password or API key.

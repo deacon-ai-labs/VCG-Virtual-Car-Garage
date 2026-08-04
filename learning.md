@@ -129,3 +129,45 @@ DEVLOG.md is the technical history of the application:
 - How do we add a New Conversation button?
 
 - How do we remember a vehicle after the browser session ends?
+
+# Session 6
+
+
+
+## What I learned
+
+
+
+- PostgreSQL stores permanent structured data.
+
+- Supabase hosts and manages a PostgreSQL database.
+
+- Tables contain rows and columns.
+
+- A primary key uniquely identifies each row.
+
+- Row Level Security controls which database rows a user can access.
+
+- Development and production environments need separate secrets.
+
+- The user interface should not contain database connection logic.
+
+
+
+## What I found difficult
+
+
+
+- Add anything that was unclear.
+
+
+
+## Questions I still have
+
+
+
+- How will each user own only their own vehicles?
+
+- Why do we need authentication before proper RLS?
+
+- How will RAG use the same Postgres database?

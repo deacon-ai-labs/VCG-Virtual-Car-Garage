@@ -38,7 +38,7 @@ def get_supabase_client() -> Client:
 
 def get_vehicles() -> list[dict]:
 
-    """Return all saved vehicles, ordered by profile name."""
+    """Return all vehicles ordered by profile name."""
 
 
 
@@ -66,6 +66,42 @@ def get_vehicles() -> list[dict]:
 
 
 
+def get_vehicle(vehicle_id: int) -> dict | None:
+
+    """Return one vehicle by ID, or None if it does not exist."""
+
+
+
+    client = get_supabase_client()
+
+
+
+    response = (
+
+        client.table("vehicles")
+
+        .select("*")
+
+        .eq("id", vehicle_id)
+
+        .execute()
+
+    )
+
+
+
+    if not response.data:
+
+        return None
+
+
+
+    return response.data[0]
+
+
+
+
+
 def add_vehicle(vehicle: dict) -> dict:
 
     """Insert one vehicle and return the saved database row."""
@@ -81,6 +117,8 @@ def add_vehicle(vehicle: dict) -> dict:
         client.table("vehicles")
 
         .insert(vehicle)
+
+        .select("*")
 
         .execute()
 

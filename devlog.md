@@ -182,3 +182,64 @@ git pull --rebase
 git push
 
 Do not commit any .env, secrets.toml, database password or API key.
+
+
+# Session 7
+
+
+
+## Changes made
+
+
+
+- Connected the Streamlit sidebar to Supabase.
+
+- Loaded permanent vehicle profiles.
+
+- Added active-vehicle selection.
+
+- Displayed vehicle details in the sidebar.
+
+- Added a form for creating additional vehicle profiles.
+
+- Saved new vehicles permanently in PostgreSQL.
+
+- Added selected-vehicle context to Garage AI.
+
+- Reset chat context when switching vehicles.
+
+
+
+## Architecture
+
+
+
+- Supabase stores permanent vehicle records.
+
+- Streamlit Session State stores the temporary active vehicle ID.
+
+- database.py isolates database access from the user interface.
+
+- Garage AI receives the active vehicle as contextual information.
+
+
+
+## Current limitations
+
+
+
+- All prototype visitors can currently see the same vehicles.
+
+- There is no user authentication.
+
+- Vehicles cannot yet be edited or deleted through the app.
+
+- Conversation history is not stored permanently.
+
+
+
+## Next development step
+
+
+
+- Add Supabase authentication and user-owned vehicle records, or begin the first controlled RAG prototype with the EP3 owner’s manual.

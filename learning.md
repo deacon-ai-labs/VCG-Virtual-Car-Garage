@@ -171,3 +171,48 @@ DEVLOG.md is the technical history of the application:
 - Why do we need authentication before proper RLS?
 
 - How will RAG use the same Postgres database?
+
+
+# Session 7
+
+
+
+## What I learned
+
+
+
+- Streamlit can read permanent data from a hosted database.
+
+- A database row has a permanent primary key.
+
+- The UI can display a friendly profile name while internally using its ID.
+
+- Session State stores the temporary active vehicle selection.
+
+- Supabase remains the source of truth for vehicle details.
+
+- Changing the active vehicle should reset incompatible chat context.
+
+- Forms group related inputs and submit them together.
+
+- Database errors should be handled rather than crashing the whole application.
+
+
+
+## What I found difficult
+
+
+
+- Add anything that was unclear during this session.
+
+
+
+## Questions I still have
+
+
+
+- How will authentication associate vehicles with individual users?
+
+- How do we edit and delete vehicle profiles safely?
+
+- How will RAG choose documents for the selected vehicle?

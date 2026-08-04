@@ -208,6 +208,7 @@ Do not commit any .env, secrets.toml, database password or API key.
 
 - Reset chat context when switching vehicles.
 
+- Rather than editing the app.py file, we got chatgpt to rewrite the file to include modify / delete capability of the saved cars.
 
 
 ## Architecture
@@ -243,3 +244,5 @@ Do not commit any .env, secrets.toml, database password or API key.
 
 
 - Add Supabase authentication and user-owned vehicle records, or begin the first controlled RAG prototype with the EP3 owner’s manual.
+
+

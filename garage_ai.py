@@ -1,56 +1,67 @@
-from openai import OpenAI
+from openai import OpenAI 
 
+  
 
+  
 
-client = OpenAI()
+client = OpenAI() 
 
+  
 
+  
 
+def ask_ai( 
 
-def ask_ai(user_input, vehicle_description, previous_response_id):
+    user_message: str, 
 
-    """
+    vehicle_description: str | None, 
 
-    Send a question to OpenAI and return the response.
+    previous_response_id: str | None, 
 
-    """
+): 
 
+    """Send a message to Garage AI and return the OpenAI response.""" 
 
+  
 
-    request = {
+    request = { 
 
-        "model": "gpt-4.1-mini",
+        "model": "gpt-4.1-mini", 
 
-        "instructions": (
+        "instructions": ( 
 
-            "You are Virtual Car Garage AI, "
+            "You are Virtual Car Garage's cautious automotive assistant. " 
 
-            "a cautious automotive assistant. "
+            "Help the user investigate automotive questions and problems. " 
 
-            f"The user's vehicle is: {vehicle_description}. "
+            "Do not claim certainty from limited information. " 
 
-            "Use that information whenever it is relevant. "
+            "Recommend only safe basic checks. " 
 
-            "Do not pretend to know things you cannot know. "
+            "Clearly state when a vehicle should not be driven or should " 
 
-            "Always explain your reasoning."
+            "be inspected by a qualified mechanic.\n\n" 
 
-        ),
+            "The currently selected vehicle is:\n" 
 
-        "input": user_input,
+            f"{vehicle_description or 'No vehicle is currently selected.'}\n\n" 
 
-    }
+            "Use the selected vehicle information whenever it is relevant. " 
 
+            "Do not invent missing vehicle details." 
 
+        ), 
 
-    if previous_response_id:
+        "input": user_message, 
 
-        request["previous_response_id"] = previous_response_id
+    } 
 
+  
 
+    if previous_response_id is not None: 
 
-    response = client.responses.create(**request)
+        request["previous_response_id"] = previous_response_id 
 
+  
 
-
-    return response
+    return client.responses.create(**request) 

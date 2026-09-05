@@ -447,3 +447,508 @@ User question
   
 
 - Later, consider adding an explicit knowledge scope/model identifier to vehicle records so RAG document selection can scale beyond the EP3. 
+
+
+# Session 9 
+
+  
+
+## Changes made 
+
+  
+
+### Authentication and user-owned garages 
+
+  
+
+- Added Supabase email/password authentication. 
+
+  
+
+- Created Deacon's Supabase Auth user. 
+
+  
+
+- Added `owner_id` to the `vehicles` table. 
+
+  
+
+- Assigned the existing EP3 and BYD vehicle records to Deacon's Auth user UUID. 
+
+  
+
+- Added a foreign key from `vehicles.owner_id` to `auth.users(id)`. 
+
+  
+
+- Made `vehicles.owner_id` mandatory. 
+
+  
+
+- Removed the original prototype shared-access RLS policies. 
+
+  
+
+- Added authenticated user-specific RLS policies for: 
+
+  - SELECT 
+
+  - INSERT 
+
+  - UPDATE 
+
+  - DELETE 
+
+  
+
+- Added `auth.py`. 
+
+  
+
+- Added authentication functions for: 
+
+  - sign-up 
+
+  - sign-in 
+
+  - sign-out 
+
+  - restoring an authenticated Supabase client from an existing session 
+
+  
+
+- Added `test_auth.py`. 
+
+  
+
+- Added four authentication unit tests. 
+
+  
+
+- Updated `database.py` so all vehicle CRUD operations use the authenticated Supabase client. 
+
+  
+
+- Updated new vehicle creation so the authenticated user's UUID is automatically stored as `owner_id`. 
+
+  
+
+- Added `test_database.py`. 
+
+  
+
+- Added database tests for authenticated vehicle CRUD. 
+
+  
+
+- Updated `app.py` with: 
+
+  - sign-in UI 
+
+  - create-account UI 
+
+  - sign-out 
+
+  - authenticated Streamlit session state 
+
+  - authenticated Supabase client restoration 
+
+  - prevention of vehicle loading before authentication succeeds 
+
+  
+
+- Added signed-in user information to the sidebar. 
+
+  
+
+- Verified Deacon can sign in and see only his EP3 and BYD. 
+
+  
+
+- Created a second test user. 
+
+  
+
+- Verified the second user initially sees an empty garage. 
+
+  
+
+- Verified the second user can create a separate VW Polo. 
+
+  
+
+- Verified Deacon cannot see the second user's VW Polo. 
+
+  
+
+- Verified the second user cannot see Deacon's vehicles. 
+
+  
+
+### Persistent conversations 
+
+  
+
+- Created a `conversations` table in Supabase. 
+
+  
+
+- Added: 
+
+  - `owner_id` 
+
+  - `vehicle_id` 
+
+  - `title` 
+
+  - `last_response_id` 
+
+  - `created_at` 
+
+  - `updated_at` 
+
+  
+
+- Created a `messages` table in Supabase. 
+
+  
+
+- Added: 
+
+  - `conversation_id` 
+
+  - `owner_id` 
+
+  - `role` 
+
+  - `content` 
+
+  - `created_at` 
+
+  
+
+- Added database indexes for conversation and message lookup. 
+
+  
+
+- Enabled Row Level Security on both new tables. 
+
+  
+
+- Added user-specific RLS policies for conversations and messages. 
+
+  
+
+- Added checks preventing users from attaching conversations to another user's vehicle. 
+
+  
+
+- Added checks preventing users from attaching messages to another user's conversation. 
+
+  
+
+- Added conversation database functions: 
+
+  - `get_conversations` 
+
+  - `create_conversation` 
+
+  - `get_messages` 
+
+  - `add_message` 
+
+  - `update_conversation_response_id` 
+
+  - `rename_conversation` 
+
+  - `delete_conversation` 
+
+  
+
+- Increased database unit tests from 5 to 10 and later to 13 tests. 
+
+  
+
+- Added persistent message storage in Supabase. 
+
+  
+
+- Added persistent `last_response_id` storage for OpenAI Responses API continuation. 
+
+  
+
+- Added vehicle-specific conversation history. 
+
+  
+
+- Added New Conversation functionality. 
+
+  
+
+- Added loading of previous conversations and messages after Streamlit reruns. 
+
+  
+
+- Added automatic conversation titles based on the first user message. 
+
+  
+
+- Added manual conversation rename. 
+
+  
+
+- Added conversation deletion with confirmation. 
+
+  
+
+- Added cascading deletion of messages when a conversation is deleted. 
+
+  
+
+- Replaced the conversation dropdown with explicit conversation buttons. 
+
+  
+
+## Problems found and fixed 
+
+  
+
+- Enabling proper vehicle RLS temporarily caused the application to stop seeing vehicles because the app was still using anonymous Supabase access. 
+
+  
+
+- Fixed this by creating and restoring an authenticated Supabase client after sign-in. 
+
+  
+
+- Supabase confirmation emails initially redirected to `localhost:3000`. 
+
+  
+
+- Identified this as a Supabase Site URL / redirect configuration issue. 
+
+  
+
+- Initial persistent conversation implementation allowed one message exchange but the second user message caused the page to refresh and the conversation to appear empty. 
+
+  
+
+- Investigation showed the second message was never stored in Supabase. 
+
+  
+
+- Root cause was unstable conversation selector state combined with Streamlit reruns. 
+
+  
+
+- Initially changed conversation ordering from `updated_at` to stable `created_at` ordering. 
+
+  
+
+- Added explicit conversation selector state handling. 
+
+  
+
+- Multi-turn conversation messaging then worked correctly. 
+
+  
+
+- The dropdown still contained multiple conversations all named `New conversation`, making selection unclear. 
+
+  
+
+- Older conversation selection was also unreliable. 
+
+  
+
+- Replaced the dropdown with explicit conversation buttons using conversation IDs. 
+
+  
+
+- Added meaningful automatic conversation titles. 
+
+  
+
+- Added manual rename and delete functionality. 
+
+  
+
+## Testing 
+
+  
+
+- Authentication tests: 4 passed. 
+
+  
+
+- Initial authenticated database tests: 5 passed. 
+
+  
+
+- Conversation persistence database tests: 10 passed. 
+
+  
+
+- Final conversation-management database tests: 13 passed. 
+
+  
+
+- Confirmed Deacon can sign in and see his EP3 and BYD. 
+
+  
+
+- Confirmed a second user sees no Deacon vehicles. 
+
+  
+
+- Confirmed the second user can create their own vehicle. 
+
+  
+
+- Confirmed Deacon cannot see the second user's VW Polo. 
+
+  
+
+- Confirmed multi-turn Garage AI conversations now work. 
+
+  
+
+- Confirmed follow-up questions remain in the same conversation. 
+
+  
+
+- Confirmed older conversations can be reopened. 
+
+  
+
+- Confirmed new conversations receive meaningful titles. 
+
+  
+
+- Confirmed conversations can be renamed. 
+
+  
+
+- Confirmed conversations can be deleted. 
+
+  
+
+- Confirmed conversation messages persist in Supabase. 
+
+  
+
+## Architecture 
+
+  
+
+The authenticated application flow is now: 
+
+  
+
+User opens VCG   
+
+→ sign in with Supabase Auth   
+
+→ authenticated Supabase session   
+
+→ PostgreSQL RLS identifies `auth.uid()`   
+
+→ only that user's vehicles are returned   
+
+→ selected vehicle   
+
+→ only that vehicle's conversations are returned   
+
+→ selected conversation   
+
+→ messages loaded from Supabase   
+
+→ Garage AI + RAG   
+
+→ user and assistant messages saved   
+
+→ `last_response_id` updated   
+
+→ future turns continue the same OpenAI conversation 
+
+  
+
+Private data ownership is now: 
+
+  
+
+User   
+
+→ Vehicles   
+
+→ Conversations   
+
+→ Messages 
+
+  
+
+Honda RAG knowledge remains shared reference data and is separate from private user data. 
+
+  
+
+## Current limitations 
+
+  
+
+- Authentication currently uses email/password only. 
+
+  
+
+- Users may need to sign in again after a complete browser session restart. 
+
+  
+
+- Password reset/account recovery UI is not yet implemented. 
+
+  
+
+- Supabase Site URL / redirect configuration should be updated so email confirmation links redirect to the deployed Streamlit application rather than localhost. 
+
+  
+
+- Conversation titles are currently generated from the first user message rather than by AI. 
+
+  
+
+- Conversation search/archive features do not yet exist. 
+
+  
+
+- Deacon's full EP3 modification seed data still needs to be added once the complete modification list is available. 
+
+  
+
+- Persistent conversation functionality has been tested locally and still needs final deployed Streamlit Cloud verification after committing and pushing the Session 9 code. 
+
+  
+
+## Next development step 
+
+  
+
+- Update `learning.md` and `devlog.md`. 
+
+  
+
+- Commit and push all Session 9 changes. 
+
+  
+
+- Confirm Streamlit Cloud redeploys the authenticated and persistent-conversation version. 
+
+  
+
+- Verify authentication, vehicle isolation, persistent conversations, and Honda RAG on the deployed application. 
+
+  
+
+- Fix Supabase production redirect URL. 
+
+  
+
+- Begin Session 10: redesign the Streamlit UI to make Virtual Car Garage look polished, modern, and automotive-focused. 

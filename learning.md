@@ -307,3 +307,150 @@ DEVLOG.md is the technical history of the application:
   
 
 - How can we measure whether our RAG retrieval is consistently finding the best evidence? 
+
+
+# Session 9 
+
+  
+
+## What I learned 
+
+  
+
+- Authentication and authorization are different things. 
+
+  
+
+- Authentication proves who the user is. 
+
+  
+
+- Authorization decides what that user is allowed to access. 
+
+  
+
+- Supabase Auth can create and manage users using email and password. 
+
+  
+
+- Each authenticated Supabase user has a unique UUID that can be used as a permanent owner ID in application data. 
+
+  
+
+- Row Level Security (RLS) can enforce user isolation directly in PostgreSQL. 
+
+  
+
+- Using `auth.uid() = owner_id` means the database only returns rows owned by the currently authenticated user. 
+
+  
+
+- Database-level security is safer than relying only on Python filtering because RLS still protects the data if application code contains a mistake. 
+
+  
+
+- An authenticated Supabase client carries the user's session and allows PostgreSQL to know which user is making the request. 
+
+  
+
+- Streamlit Session State can hold temporary authentication tokens so the user remains signed in while the browser session is active. 
+
+  
+
+- Different users can share the same application and database while still seeing completely separate garages. 
+
+  
+
+- Conversation history should be stored by the application rather than relying only on temporary Streamlit state. 
+
+  
+
+- OpenAI conversation continuation state and visible chat history are separate things. 
+
+  
+
+- `last_response_id` can be stored for OpenAI conversation continuation, while Supabase stores the permanent user and assistant messages. 
+
+  
+
+- Conversations can belong to both a user and a vehicle. 
+
+  
+
+- Row Level Security should also protect conversations and messages, not just vehicles. 
+
+  
+
+- Foreign keys and `ON DELETE CASCADE` help keep related data consistent. For example, deleting a conversation can automatically delete its messages. 
+
+  
+
+- Stable application state is important when building interactive Streamlit components. 
+
+  
+
+- A Streamlit widget can cause a rerun, so unstable widget state can accidentally interrupt another action such as sending a chat message. 
+
+  
+
+- Explicit conversation IDs are more reliable than relying on hidden dropdown widget state. 
+
+  
+
+- Automated tests can verify database helper functions before testing the full user interface. 
+
+  
+
+## What I found difficult 
+
+  
+
+- Understanding how Supabase authentication tokens are passed back into the database so RLS can identify the logged-in user. 
+
+  
+
+- Understanding why the application stopped seeing vehicles after anonymous RLS access was removed. 
+
+  
+
+- Diagnosing why the second chat message disappeared even though no error was shown. 
+
+  
+
+- Understanding the interaction between Streamlit reruns, widget state, conversation selection, and chat input. 
+
+  
+
+- Understanding why visible chat history and OpenAI conversation continuation need to be persisted separately. 
+
+  
+
+## Questions I still have 
+
+  
+
+- How should we securely keep a user signed in across a complete browser restart? 
+
+  
+
+- How should password reset and account recovery work? 
+
+  
+
+- Should conversations eventually support archive, search, favourites, or categories? 
+
+  
+
+- Should conversation titles continue to be based on the first message, or should Garage AI generate better summaries later? 
+
+  
+
+- How should conversation history be summarized if a thread becomes very long? 
+
+  
+
+- How should user-specific vehicle modifications and service history be incorporated into future RAG retrieval? 
+
+  
+
+- How should we design the UI so authentication, vehicles, conversations, and Garage AI feel like one polished product? 

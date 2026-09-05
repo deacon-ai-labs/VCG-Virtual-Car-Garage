@@ -216,3 +216,94 @@ DEVLOG.md is the technical history of the application:
 - How do we edit and delete vehicle profiles safely?
 
 - How will RAG choose documents for the selected vehicle?
+
+
+# Session 8 
+
+  
+
+## What I learned 
+
+  
+
+- RAG stands for Retrieval-Augmented Generation. It allows an AI application to retrieve relevant information from trusted documents before generating an answer. 
+
+  
+
+- Embeddings convert text into numerical representations that allow semantically similar questions and document chunks to be matched. 
+
+  
+
+- Vector similarity search can find relevant information even when the user's wording is different from the wording in the source document. 
+
+  
+
+- Supabase with pgvector can store embeddings and perform similarity searches directly in PostgreSQL. 
+
+  
+
+- RAG retrieval and AI generation are separate stages. First the application retrieves relevant evidence, then the language model uses that evidence to answer the question. 
+
+  
+
+- Retrieval quality is not just about finding similar text. The application also needs to understand which source is more authoritative. 
+
+  
+
+- Vehicle-specific documentation should take priority over generic documentation. A generic Civic specification must not automatically be treated as correct for a Civic Type R. 
+
+  
+
+- A RAG system should sometimes say that it does not have enough evidence rather than confidently filling a gap from the model's general knowledge. 
+
+  
+
+- Overlapping text chunks help prevent information being lost when a document is split in the middle of a sentence. 
+
+  
+
+- Returning more candidate chunks and removing near-duplicates can improve the variety and usefulness of the evidence sent to the AI. 
+
+  
+
+- Local development and deployed production code can be different. The Codespace was running the new RAG files while Streamlit Cloud was still running the older files stored on GitHub. 
+
+  
+
+- Testing with real questions is important because it can reveal problems that are not obvious from reading the code. 
+
+  
+
+## What I found difficult 
+
+  
+
+- Understanding why a semantically relevant result can still be the wrong source for a particular vehicle. 
+
+  
+
+- Understanding the difference between generic vehicle information and authoritative model-specific specifications. 
+
+  
+
+- Diagnosing why the local Streamlit application behaved differently from the deployed Streamlit Cloud application. 
+
+  
+
+## Questions I still have 
+
+  
+
+- How should we associate the correct knowledge documents with each vehicle when the garage contains many different makes and models? 
+
+  
+
+- Should knowledge scope eventually be stored as a proper field in the vehicle database instead of being inferred from the vehicle description? 
+
+  
+
+- How should modifications to an individual vehicle affect the information Garage AI retrieves and the advice it gives? 
+
+  
+
+- How can we measure whether our RAG retrieval is consistently finding the best evidence? 

@@ -454,3 +454,252 @@ DEVLOG.md is the technical history of the application:
   
 
 - How should we design the UI so authentication, vehicles, conversations, and Garage AI feel like one polished product? 
+
+
+# Session 10 
+
+  
+
+## What I learned 
+
+  
+
+- Git branches let us make large changes without putting the stable `main` version at risk. 
+
+  
+
+- A feature branch is useful when a session includes major UI changes, new files, new database features, and behavior changes. 
+
+  
+
+- Streamlit can be styled heavily with CSS while still using native Streamlit widgets for application behavior. 
+
+  
+
+- It is better to use native Streamlit controls for interactive features and use CSS mainly for presentation rather than trying to build the whole interface in custom HTML. 
+
+  
+
+- Streamlit columns can be used to create an application-style dashboard with separate areas for the garage, Garage AI, and vehicle details. 
+
+  
+
+- Streamlit Session State is useful for application UI state such as: 
+
+  - selected vehicle 
+
+  - selected conversation 
+
+  - whether My Garage is collapsed 
+
+  
+
+- Selecting a different vehicle should also intentionally reset conversation state so Garage AI starts with a clean conversation for that vehicle. 
+
+  
+
+- A new chat does not need to exist in the database until the user actually sends the first message. 
+
+  
+
+- Creating conversations lazily avoids filling the database with empty `New conversation` records. 
+
+  
+
+- Conversation timestamps are best stored in UTC in the database and converted to the user's local timezone for display. 
+
+  
+
+- Streamlit provides the browser timezone through `st.context.timezone`. 
+
+  
+
+- Using the browser timezone means the same application can correctly display GMT/BST in the UK and local time in other countries without asking the user to configure a timezone manually. 
+
+  
+
+- `updated_at` is more useful than `created_at` for a recent-conversation list because it tells us when the conversation was last active. 
+
+  
+
+- Long chat interfaces work better when they behave like an application rather than a long webpage. 
+
+  
+
+- Garage AI can have its own scrollable history while the input remains available and the garage and vehicle panels remain visible. 
+
+  
+
+- Care is needed when mixing fixed viewport heights and Streamlit's `st.chat_input()` because clipping the parent container can accidentally hide the prompt box. 
+
+  
+
+- CSS written inside a Python f-string must escape literal braces as `{{` and `}}`. 
+
+  
+
+- Private Supabase Storage is appropriate for user-owned vehicle photos. 
+
+  
+
+- A database can store the private Storage object path rather than storing a permanent public URL. 
+
+  
+
+- Temporary signed URLs can then be created when the application needs to display a private photo. 
+
+  
+
+- User files can be isolated in Storage using owner-scoped paths such as: 
+
+  
+
+  `<owner UUID>/<vehicle ID>/<filename>` 
+
+  
+
+- Replacing a stored image safely should happen in this order: 
+
+  1. upload the new object 
+
+  2. update the database to point to it 
+
+  3. delete the previous object 
+
+  
+
+- If the database update fails, the newly uploaded object should be removed so orphaned files are not left behind. 
+
+  
+
+- A polished UI should make the vehicle image itself act as the photo upload/change control rather than exposing unnecessary administrative buttons. 
+
+  
+
+- Desktop and mobile web layouts do not need to behave identically. 
+
+  
+
+- For VCG: 
+
+  - desktop can use a fixed multi-panel application layout 
+
+  - mobile browser can use a simpler vertically stacked fallback 
+
+  - the native iPhone app planned for Session 11 can later become the premium mobile experience 
+
+  
+
+## Design lessons 
+
+  
+
+- The car should remain visually important even though Garage AI owns the largest portion of the workspace. 
+
+  
+
+- The approved visual language is: 
+
+  - dark charcoal / slate grey 
+
+  - orange/coral highlights 
+
+  - soft white text 
+
+  - premium enthusiast garage feel 
+
+  - clean rather than heavily futuristic 
+
+  
+
+- The vehicle card itself should be the main vehicle selector. 
+
+  
+
+- A second Current Vehicle dropdown is unnecessary if users can already select the car from My Garage. 
+
+  
+
+- The sign-in page should feel like part of the same product rather than a separate generic authentication screen. 
+
+  
+
+- Garage AI should be the dominant workspace in the signed-in application. 
+
+  
+
+## Problems we encountered 
+
+  
+
+- The first login hero implementation cropped the approved image at normal browser zoom. 
+
+  
+
+- The cause was `object-fit: cover` combined with a fixed minimum height. 
+
+  
+
+- Changing the layout to preserve the image aspect ratio and use `object-fit: contain` fixed the problem. 
+
+  
+
+- New Phase 4 CSS initially caused a Python `NameError`. 
+
+  
+
+- The cause was unescaped CSS braces inside a Python f-string. 
+
+  
+
+- Escaping the CSS braces fixed both the runtime error and the editor warnings. 
+
+  
+
+- The first fixed-scroll implementation caused the Garage AI prompt box to disappear. 
+
+  
+
+- The cause was clipping the Streamlit block container to `100vh` while the chat input was rendered below the independently sized chat-history area. 
+
+  
+
+- The corrected design leaves room for the composer rather than clipping the entire page container. 
+
+  
+
+## Questions / future learning 
+
+  
+
+- How should we compress and resize uploaded vehicle photos before storing them? 
+
+  
+
+- Should VCG eventually support multiple photos per vehicle rather than one primary image? 
+
+  
+
+- Should vehicle photos have metadata such as: 
+
+  - front 
+
+  - rear 
+
+  - engine bay 
+
+  - interior 
+
+  - modifications 
+
+  
+
+- How should maintenance records integrate with vehicle mileage and reminders? 
+
+  
+
+- What UI patterns from the Streamlit version should carry forward into the native SwiftUI iPhone app? 
+
+  
+
+- How should the Python Garage AI / RAG layer be exposed as a secure API for the iPhone app?

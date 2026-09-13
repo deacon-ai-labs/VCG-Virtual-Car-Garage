@@ -8,12 +8,21 @@ from database import (
     delete_vehicle,
     get_conversations,
     get_messages,
+    get_maintenance_items,
+    get_vehicle_photo_url,
     delete_conversation,
+    delete_maintenance_item,
+    delete_vehicle_photo,
     rename_conversation,
+    add_maintenance_item,
+    set_maintenance_completed,
     get_vehicle,
     get_vehicles,
     update_conversation_response_id,
     update_vehicle,
+    update_maintenance_item,
+    update_vehicle_photo_path,
+    upload_vehicle_photo,
 )
 
 
@@ -160,7 +169,7 @@ class TestDatabase(unittest.TestCase):
             1,
         )
 
-    def test_get_conversations_filters_by_vehicle_with_stable_order(self):
+    def test_get_conversations_orders_by_last_activity(self):
         client = MagicMock()
 
         response = MagicMock()
@@ -203,7 +212,7 @@ class TestDatabase(unittest.TestCase):
             .select.return_value
             .eq.return_value
             .order.assert_called_once_with(
-                "created_at",
+                "updated_at",
                 desc=True,
             )
         )
@@ -452,6 +461,217 @@ class TestDatabase(unittest.TestCase):
         delete_query.eq.assert_called_once_with(
             "id",
             "conversation-1",
+        )
+
+    def test_get_maintenance_items_filters_by_vehicle(self):
+        client = MagicMock()
+        response = MagicMock()
+        response.data = [{"id": "m1", "title": "Oil change"}]
+
+        (
+            client.table.return_value
+            .select.return_value
+            .eq.return_value
+            .order.return_value
+            .execute.return_value
+        ) = response
+
+        result = get_maintenance_items(client, 1)
+
+        client.table.assert_called_once_with("maintenance_items")
+        (
+            client.table.return_value
+            .select.return_value
+            .eq.assert_called_once_with("vehicle_id", 1)
+        )
+        self.assertEqual(result, response.data)
+
+    def test_add_maintenance_item_adds_owner_and_vehicle(self):
+        client = MagicMock()
+        response = MagicMock()
+        response.data = [{"id": "m1"}]
+
+        (
+            client.table.return_value
+            .insert.return_value
+            .select.return_value
+            .execute.return_value
+        ) = response
+
+        item = {
+            "title": "Oil change",
+            "status": "pending",
+            "due_mileage": 128000,
+            "due_date": None,
+            "notes": "",
+            "sort_order": 0,
+        }
+
+        add_maintenance_item(
+            client,
+            "user-123",
+            1,
+            item,
+        )
+
+        client.table.return_value.insert.assert_called_once_with(
+            {
+                **item,
+                "owner_id": "user-123",
+                "vehicle_id": 1,
+            }
+        )
+
+    def test_update_maintenance_item_updates_row(self):
+        client = MagicMock()
+        response = MagicMock()
+        response.data = [{"id": "m1", "title": "Brake fluid"}]
+
+        (
+            client.table.return_value
+            .update.return_value
+            .eq.return_value
+            .select.return_value
+            .execute.return_value
+        ) = response
+
+        result = update_maintenance_item(
+            client,
+            "m1",
+            {"title": "Brake fluid"},
+        )
+
+        self.assertEqual(result, response.data[0])
+
+    def test_delete_maintenance_item_deletes_row(self):
+        client = MagicMock()
+
+        delete_query = (
+            client.table.return_value
+            .delete.return_value
+        )
+
+        delete_maintenance_item(client, "m1")
+
+        client.table.assert_called_once_with("maintenance_items")
+        delete_query.eq.assert_called_once_with("id", "m1")
+
+    @patch("database.datetime")
+    def test_set_maintenance_completed_sets_timestamp(
+        self,
+        mock_datetime,
+    ):
+        client = MagicMock()
+        response = MagicMock()
+        response.data = [{"id": "m1", "status": "completed"}]
+
+        mock_datetime.now.return_value.isoformat.return_value = (
+            "2026-09-13T12:00:00+00:00"
+        )
+
+        (
+            client.table.return_value
+            .update.return_value
+            .eq.return_value
+            .select.return_value
+            .execute.return_value
+        ) = response
+
+        set_maintenance_completed(
+            client,
+            "m1",
+            True,
+        )
+
+        client.table.return_value.update.assert_called_once_with(
+            {
+                "status": "completed",
+                "completed_at": "2026-09-13T12:00:00+00:00",
+                "updated_at": "2026-09-13T12:00:00+00:00",
+            }
+        )
+
+    def test_upload_vehicle_photo_uses_owner_scoped_path(self):
+        client = MagicMock()
+        bucket = client.storage.from_.return_value
+
+        path = upload_vehicle_photo(
+            client,
+            "user-123",
+            7,
+            "my car.JPG",
+            b"image-bytes",
+            "image/jpeg",
+        )
+
+        self.assertTrue(
+            path.startswith("user-123/7/")
+        )
+        self.assertTrue(
+            path.endswith(".jpg")
+        )
+
+        bucket.upload.assert_called_once()
+        kwargs = bucket.upload.call_args.kwargs
+        self.assertEqual(kwargs["path"], path)
+        self.assertEqual(kwargs["file"], b"image-bytes")
+        self.assertEqual(
+            kwargs["file_options"]["content-type"],
+            "image/jpeg",
+        )
+
+    def test_get_vehicle_photo_url_returns_signed_url(self):
+        client = MagicMock()
+        bucket = client.storage.from_.return_value
+        bucket.create_signed_url.return_value = {
+            "signedURL": "https://example.test/photo"
+        }
+
+        result = get_vehicle_photo_url(
+            client,
+            "user-123/7/photo.jpg",
+        )
+
+        self.assertEqual(
+            result,
+            "https://example.test/photo",
+        )
+
+    def test_update_vehicle_photo_path_updates_vehicle(self):
+        client = MagicMock()
+        response = MagicMock()
+        response.data = [{"id": 7, "photo_path": "new.jpg"}]
+
+        (
+            client.table.return_value
+            .update.return_value
+            .eq.return_value
+            .select.return_value
+            .execute.return_value
+        ) = response
+
+        result = update_vehicle_photo_path(
+            client,
+            7,
+            "user-123/7/new.jpg",
+        )
+
+        client.table.return_value.update.assert_called_once_with(
+            {"photo_path": "user-123/7/new.jpg"}
+        )
+        self.assertEqual(result, response.data[0])
+
+    def test_delete_vehicle_photo_removes_storage_object(self):
+        client = MagicMock()
+        bucket = client.storage.from_.return_value
+
+        delete_vehicle_photo(
+            client,
+            "user-123/7/photo.jpg",
+        )
+
+        bucket.remove.assert_called_once_with(
+            ["user-123/7/photo.jpg"]
         )
 
 

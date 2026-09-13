@@ -952,3 +952,777 @@ Honda RAG knowledge remains shared reference data and is separate from private u
   
 
 - Begin Session 10: redesign the Streamlit UI to make Virtual Car Garage look polished, modern, and automotive-focused. 
+
+# Session 10 
+
+  
+
+## Session goal 
+
+  
+
+Redesign Virtual Car Garage from a functional Streamlit prototype into a more polished enthusiast garage application while preserving the working Session 9 foundations. 
+
+  
+
+The approved design direction used: 
+
+- dark grey / charcoal UI 
+
+- orange/coral highlights 
+
+- premium garage aesthetic 
+
+- large central Garage AI workspace 
+
+- collapsible My Garage rail 
+
+- active vehicle panel on the right 
+
+  
+
+## Development branch 
+
+  
+
+Created: 
+
+  
+
+`session-10-ui` 
+
+  
+
+The stable Session 9 application remains on `main`. 
+
+  
+
+## Baseline 
+
+  
+
+Before starting Session 10: 
+
+  
+
+- existing authentication tests passed 
+
+- existing database tests passed 
+
+- baseline total: 17 tests 
+
+  
+
+## Supabase database changes 
+
+  
+
+Added: 
+
+  
+
+`vehicles.photo_path` 
+
+  
+
+Created: 
+
+  
+
+`maintenance_items` 
+
+  
+
+The maintenance table includes: 
+
+- owner ID 
+
+- vehicle ID 
+
+- title 
+
+- status 
+
+- due mileage 
+
+- due date 
+
+- completed timestamp 
+
+- notes 
+
+- sort order 
+
+- created timestamp 
+
+- updated timestamp 
+
+  
+
+Enabled RLS for maintenance records. 
+
+  
+
+Added ownership policies for: 
+
+- SELECT 
+
+- INSERT 
+
+- UPDATE 
+
+- DELETE 
+
+  
+
+Maintenance UI implementation was deliberately deferred to a later phase/session. 
+
+  
+
+## Supabase Storage 
+
+  
+
+Created private bucket: 
+
+  
+
+`vehicle-photos` 
+
+  
+
+Added Storage RLS policies for: 
+
+- viewing own vehicle photos 
+
+- uploading own vehicle photos 
+
+- updating own vehicle photos 
+
+- deleting own vehicle photos 
+
+  
+
+Vehicle photo object paths use the user's UUID as the first folder: 
+
+  
+
+`<owner UUID>/<vehicle ID>/<generated filename>` 
+
+  
+
+## Python database layer 
+
+  
+
+Extended `database.py` with support for: 
+
+  
+
+### Maintenance 
+
+  
+
+- `get_maintenance_items` 
+
+- `add_maintenance_item` 
+
+- `update_maintenance_item` 
+
+- `delete_maintenance_item` 
+
+- `set_maintenance_completed` 
+
+  
+
+### Vehicle photos 
+
+  
+
+- `upload_vehicle_photo` 
+
+- `get_vehicle_photo_url` 
+
+- `update_vehicle_photo_path` 
+
+- `delete_vehicle_photo` 
+
+  
+
+Database tests increased from 13 to 22. 
+
+  
+
+Authentication + database test baseline increased to 26 total tests. 
+
+  
+
+## Global timezone handling 
+
+  
+
+Added: 
+
+  
+
+`time_utils.py` 
+
+  
+
+Added browser-local timestamp formatting. 
+
+  
+
+Conversation timestamps continue to be stored in UTC. 
+
+  
+
+The application now converts timestamps for display using: 
+
+  
+
+`st.context.timezone` 
+
+  
+
+This automatically handles: 
+
+- UK GMT/BST 
+
+- US timezones 
+
+- other browser-local timezones 
+
+  
+
+Added four timezone tests. 
+
+  
+
+## Conversation behavior changes 
+
+  
+
+Changed conversation ordering from: 
+
+  
+
+`created_at` 
+
+  
+
+to: 
+
+  
+
+`updated_at` 
+
+  
+
+so Recent Conversations reflects last activity. 
+
+  
+
+Changed vehicle selection behavior: 
+
+  
+
+- selecting a vehicle now opens a fresh blank chat state 
+
+- no conversation is created in Supabase at vehicle selection time 
+
+- the first user message creates the conversation 
+
+- existing conversations are only reopened when explicitly selected 
+
+  
+
+Removed the separate: 
+
+  
+
+`New conversation` 
+
+  
+
+button. 
+
+  
+
+Removed the development-style blank-chat information banner. 
+
+  
+
+## Visual design system 
+
+  
+
+Added: 
+
+  
+
+`ui_theme.py` 
+
+  
+
+Created reusable VCG visual styling including: 
+
+  
+
+- charcoal/slate background 
+
+- orange/coral accents 
+
+- dark cards 
+
+- styled forms 
+
+- styled buttons 
+
+- styled chat messages 
+
+- typography 
+
+- vehicle image placeholders 
+
+- dashboard panels 
+
+  
+
+## Sign-in page redesign 
+
+  
+
+Rebuilt the authentication screen into a two-column design based on the approved mockup. 
+
+  
+
+Left side: 
+
+- automotive hero artwork 
+
+- Virtual Car Garage product identity 
+
+  
+
+Right side: 
+
+- Sign In 
+
+- Create Account 
+
+- email/password authentication 
+
+  
+
+No Google, Apple, or social login was added. 
+
+  
+
+The hero image originally cropped at default browser zoom. 
+
+  
+
+Fixed by: 
+
+- removing fixed minimum height 
+
+- preserving the image aspect ratio 
+
+- changing from `object-fit: cover` 
+
+- to `object-fit: contain` 
+
+  
+
+## Dashboard redesign 
+
+  
+
+Replaced the original sidebar-heavy application with a three-zone signed-in dashboard. 
+
+  
+
+### Left 
+
+  
+
+`My Garage` 
+
+  
+
+Includes: 
+
+- collapsible garage panel 
+
+- vehicle cards 
+
+- active vehicle selection 
+
+- add vehicle 
+
+- recent conversations 
+
+- conversation management 
+
+  
+
+### Centre 
+
+  
+
+`Garage AI` 
+
+  
+
+Garage AI now receives the largest portion of the desktop layout. 
+
+  
+
+Includes: 
+
+- conversation history 
+
+- persistent chat 
+
+- current vehicle context 
+
+- chat input 
+
+  
+
+The redundant Current Vehicle dropdown was removed. 
+
+  
+
+Vehicle selection is now performed through the garage vehicle cards. 
+
+  
+
+### Right 
+
+  
+
+`Active Vehicle` 
+
+  
+
+Includes: 
+
+- vehicle name 
+
+- large photo area 
+
+- year 
+
+- mileage 
+
+- engine 
+
+- profile name 
+
+- modifications/build notes 
+
+- edit vehicle 
+
+- delete vehicle 
+
+  
+
+A future maintenance checklist area is reserved but the actual maintenance UI has been deferred. 
+
+  
+
+## Dashboard state 
+
+  
+
+Added: 
+
+  
+
+`dashboard_state.py` 
+
+  
+
+Vehicle selection now intentionally resets the active conversation when switching cars. 
+
+  
+
+Added tests confirming: 
+
+- selecting the same vehicle preserves the current conversation 
+
+- selecting a different vehicle starts a blank conversation state 
+
+  
+
+## Independent scrolling 
+
+  
+
+Changed the desktop experience from a long scrolling web page into a more application-like shell. 
+
+  
+
+Desktop behavior: 
+
+  
+
+- My Garage stays anchored 
+
+- Active Vehicle stays anchored 
+
+- Garage AI history scrolls independently 
+
+- chat input remains visible 
+
+- left/right panels can independently scroll if their content becomes taller than the viewport 
+
+  
+
+An initial implementation accidentally hid the chat input. 
+
+  
+
+Root cause: 
+
+- the full Streamlit block container was clipped to `100vh` 
+
+- the chat composer was rendered below the allocated chat-history height 
+
+  
+
+The scrolling shell was corrected to reserve space for the chat composer. 
+
+  
+
+## Vehicle photos 
+
+  
+
+Added: 
+
+  
+
+`photo_service.py` 
+
+  
+
+Added safe photo replacement behavior: 
+
+  
+
+1. upload new image 
+
+2. update database path 
+
+3. remove old image 
+
+  
+
+If updating the database fails, the newly uploaded image is deleted to avoid orphaned files. 
+
+  
+
+Added: 
+
+  
+
+`photo_ui.py` 
+
+  
+
+Photo UX was changed following feedback. 
+
+  
+
+The vehicle photo itself now acts as the control: 
+
+  
+
+- click placeholder to add photo 
+
+- click existing image to replace photo 
+
+- new selection uploads automatically 
+
+- small Remove Photo action remains available 
+
+  
+
+Photos display in: 
+
+- My Garage vehicle card 
+
+- Active Vehicle panel 
+
+  
+
+Photos are stored privately in Supabase and displayed using signed URLs. 
+
+  
+
+## Photo tests 
+
+  
+
+Added tests for: 
+
+  
+
+- owner-scoped upload paths 
+
+- signed photo URLs 
+
+- database photo paths 
+
+- safe photo replacement 
+
+- cleanup after failed database update 
+
+- photo removal 
+
+- photo upload fingerprinting 
+
+- photo uploader styling 
+
+  
+
+## Mobile browser fallback 
+
+  
+
+Added a lightweight responsive web fallback for screens under approximately 900 px. 
+
+  
+
+Mobile-browser behavior: 
+
+  
+
+- restores normal document scrolling 
+
+- removes fixed desktop panel heights 
+
+- allows Streamlit columns to stack vertically 
+
+- makes panels full width 
+
+- keeps Garage AI history usable 
+
+- removes desktop-only scrolling constraints 
+
+  
+
+The mobile browser is intended to remain usable rather than reproduce the full desktop dashboard. 
+
+  
+
+A native SwiftUI iPhone application remains planned for Session 11. 
+
+  
+
+## Test progression 
+
+  
+
+Session 10 test count progressed through: 
+
+  
+
+- 17 baseline tests 
+
+- 26 tests after photo/maintenance database helpers 
+
+- 30 tests after timezone work 
+
+- 32 tests after dashboard state work 
+
+- additional photo, UI and shell tests added during later phases 
+
+  
+
+Final full regression suite and mobile deployment check are still to be completed before merging to `main`. 
+
+  
+
+## Deferred work 
+
+  
+
+### Maintenance UI 
+
+  
+
+Database schema and RLS exist, but the visible maintenance checklist and maintenance management UX were intentionally deferred. 
+
+  
+
+Planned functionality includes: 
+
+  
+
+- add maintenance item 
+
+- edit maintenance item 
+
+- mark completed 
+
+- reopen 
+
+- delete 
+
+- due mileage calculation 
+
+- due date calculation 
+
+- overdue states 
+
+  
+
+### Mobile native application 
+
+  
+
+Planned for Session 11: 
+
+  
+
+- Swift 
+
+- SwiftUI 
+
+- Supabase Auth 
+
+- same VCG users/data 
+
+- native garage UI 
+
+- native Garage AI chat 
+
+- secure VCG AI backend 
+
+- TestFlight deployment 
+
+  
+
+## End-of-session deployment plan 
+
+  
+
+Before ending Session 10 work: 
+
+  
+
+1. run full unit-test suite 
+
+2. commit all Session 10 files 
+
+3. push `session-10-ui` to GitHub 
+
+4. deploy/test the feature branch 
+
+5. perform a real mobile-browser smoke test 
+
+6. keep `main` unchanged until final review/merge 

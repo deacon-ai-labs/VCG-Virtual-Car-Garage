@@ -47,3 +47,46 @@ def sign_out(client) -> None:
     """Sign out the current Supabase session."""
 
     client.auth.sign_out()
+
+
+def user_auth_error_message(
+    error: Exception,
+    action: str = "sign in",
+) -> str:
+    """Return a safe, useful message for authentication failures."""
+
+    message = str(error).lower()
+
+    configuration_markers = (
+        "unregistered api key",
+        "unauthorized_unregistered_api_key",
+        "invalid api key",
+        "apikey",
+    )
+
+    if any(
+        marker in message
+        for marker in configuration_markers
+    ):
+        return (
+            "VCG authentication is temporarily misconfigured. "
+            "The Supabase API key used by this environment is not valid."
+        )
+
+    credential_markers = (
+        "invalid login credentials",
+        "email not confirmed",
+    )
+
+    if any(
+        marker in message
+        for marker in credential_markers
+    ):
+        return (
+            "Sign in failed. Check your email and password and try again."
+        )
+
+    return (
+        f"VCG could not {action}. "
+        "The authentication service returned an unexpected error."
+    )

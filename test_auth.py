@@ -66,6 +66,34 @@ class TestAuth(unittest.TestCase):
 
         self.assertIs(result, client)
 
+    def test_auth_error_message_identifies_api_key_problem(self):
+        message = auth.user_auth_error_message(
+            Exception(
+                "UNAUTHORIZED_UNREGISTERED_API_KEY: Unregistered API key"
+            )
+        )
+
+        self.assertIn(
+            "misconfigured",
+            message,
+        )
+        self.assertNotIn(
+            "email and password",
+            message,
+        )
+
+    def test_auth_error_message_keeps_bad_credentials_user_friendly(self):
+        message = auth.user_auth_error_message(
+            Exception(
+                "Invalid login credentials"
+            )
+        )
+
+        self.assertIn(
+            "email and password",
+            message,
+        )
+
     def test_sign_out_calls_supabase_sign_out(self):
         client = MagicMock()
 

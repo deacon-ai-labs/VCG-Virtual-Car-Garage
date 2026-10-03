@@ -8,6 +8,7 @@ from auth import (
     sign_in,
     sign_out,
     sign_up,
+    user_auth_error_message,
 )
 from dashboard_state import apply_vehicle_selection
 from dashboard_view import (
@@ -212,10 +213,12 @@ def show_auth_screen() -> None:
                             email.strip(),
                             password,
                         )
-                    except Exception:
+                    except Exception as error:
                         st.error(
-                            "Sign in failed. Check your email "
-                            "and password and try again."
+                            user_auth_error_message(
+                                error,
+                                action="sign in",
+                            )
                         )
                     else:
                         if store_auth_session(response):
@@ -264,7 +267,10 @@ def show_auth_screen() -> None:
                         )
                     except Exception as error:
                         st.error(
-                            f"Account creation failed: {error}"
+                            user_auth_error_message(
+                                error,
+                                action="create the account",
+                            )
                         )
                     else:
                         if store_auth_session(response):

@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# VCG private knowledge sources
+knowledge/
+*.service-role.env
+*.supabase-secret.env
+
+# Admin-only VCG source documents
+private_knowledge/

@@ -2,7 +2,7 @@ from difflib import SequenceMatcher
 
 from openai import OpenAI
 
-from database import get_supabase_client
+from knowledge_admin import get_knowledge_admin_client
 
 
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -34,9 +34,9 @@ def search_knowledge_chunks(
     match_count: int,
     vehicle_scope: str | None,
 ) -> list[dict]:
-    """Search Supabase for semantically similar knowledge chunks."""
+    """Search private Supabase knowledge with the server-only client."""
 
-    supabase = get_supabase_client()
+    supabase = get_knowledge_admin_client()
 
     response = (
         supabase.rpc(

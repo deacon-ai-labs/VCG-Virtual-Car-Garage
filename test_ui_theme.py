@@ -9,7 +9,7 @@ class TestDashboardShellCss(unittest.TestCase):
         css = dashboard_shell_css()
 
         self.assertIn(
-            "calc(100vh - 360px)",
+            "calc(100vh - 515px)",
             css,
         )
         self.assertNotIn(

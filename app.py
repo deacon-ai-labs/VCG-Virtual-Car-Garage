@@ -1,3 +1,4 @@
+from html import escape
 from pathlib import Path
 
 import streamlit as st
@@ -9,6 +10,11 @@ from auth import (
     sign_up,
 )
 from dashboard_state import apply_vehicle_selection
+from dashboard_view import (
+    maintenance_due_label,
+    maintenance_snapshot,
+    modification_items,
+)
 from database import (
     add_message,
     add_vehicle,
@@ -17,6 +23,7 @@ from database import (
     delete_vehicle,
     get_conversations,
     get_messages,
+    get_maintenance_items,
     get_vehicle_photo_url,
     get_vehicles,
     rename_conversation,
@@ -497,9 +504,45 @@ if active_conversation:
         st.stop()
 
 
+maintenance_items = []
+maintenance_load_failed = False
+
+if active_vehicle:
+    try:
+        maintenance_items = get_maintenance_items(
+            supabase,
+            active_vehicle["id"],
+        )
+    except Exception:
+        maintenance_items = []
+        maintenance_load_failed = True
+
+
+maintenance = maintenance_snapshot(
+    maintenance_items,
+    (
+        int(active_vehicle["mileage"])
+        if active_vehicle
+        else 0
+    ),
+)
+
+if maintenance_load_failed:
+    maintenance["state"] = "Unavailable"
+    maintenance["detail"] = "Could not load"
+
+build_items = modification_items(
+    (
+        active_vehicle.get("modifications")
+        if active_vehicle
+        else None
+    )
+)
+
+
 # ---------- top bar ----------
 top_brand, top_account = st.columns(
-    [4.8, 2.2],
+    [5.2, 1.8],
     gap="large",
     vertical_alignment="center",
 )
@@ -509,13 +552,13 @@ with top_brand:
 
 with top_account:
     account_text, signout_col = st.columns(
-        [2.3, 1],
+        [2.2, 1],
         vertical_alignment="center",
     )
 
     with account_text:
         st.caption(
-            "Signed in as"
+            "SIGNED IN"
         )
         st.markdown(
             f"**{st.session_state.auth_user_email}**"
@@ -542,22 +585,24 @@ st.markdown(
 )
 
 
-# ---------- dashboard columns ----------
+# ---------- M12 dashboard shell ----------
 if st.session_state.garage_collapsed:
-    layout = [0.58, 7.05, 3.2]
+    layout = [0.62, 9.38]
 else:
-    layout = [2.45, 6.55, 3.2]
+    layout = [2.25, 7.75]
 
-garage_col, chat_col, vehicle_col = st.columns(
+garage_col, workspace_col = st.columns(
     layout,
     gap="medium",
     vertical_alignment="top",
 )
 
 
-# ---------- left garage rail ----------
+# ---------- fleet rail ----------
 with garage_col:
-    with st.container(key="vcg_garage_scroll"):
+    with st.container(
+        key="vcg_garage_scroll"
+    ):
         if st.session_state.garage_collapsed:
             if st.button(
                 "»",
@@ -576,8 +621,13 @@ with garage_col:
 
                 if st.button(
                     "🚗",
-                    key=f"collapsed_vehicle_{vehicle['id']}",
-                    help=vehicle["profile_name"],
+                    key=(
+                        "collapsed_vehicle_"
+                        f"{vehicle['id']}"
+                    ),
+                    help=vehicle[
+                        "profile_name"
+                    ],
                     type=(
                         "primary"
                         if is_active
@@ -603,7 +653,11 @@ with garage_col:
 
             with garage_header:
                 st.markdown(
-                    "### 🏠 My Garage"
+                    """
+                    <div class="vcg-rail-kicker">FLEET</div>
+                    <div class="vcg-rail-title">My Garage</div>
+                    """,
+                    unsafe_allow_html=True,
                 )
                 st.caption(
                     f"{len(vehicles)} vehicle"
@@ -629,9 +683,11 @@ with garage_col:
                 with st.container(
                     border=True,
                 ):
-                    photo_url = signed_vehicle_photo(
-                        supabase,
-                        vehicle,
+                    photo_url = (
+                        signed_vehicle_photo(
+                            supabase,
+                            vehicle,
+                        )
                     )
 
                     if photo_url:
@@ -660,11 +716,14 @@ with garage_col:
 
                     if st.button(
                         (
-                            "Active Vehicle"
+                            "Selected"
                             if is_active
-                            else "Open Garage"
+                            else "Open vehicle"
                         ),
-                        key=f"vehicle_card_{vehicle['id']}",
+                        key=(
+                            "vehicle_card_"
+                            f"{vehicle['id']}"
+                        ),
                         type=(
                             "primary"
                             if is_active
@@ -692,7 +751,7 @@ with garage_col:
                 ):
                     profile_name = st.text_input(
                         "Profile name",
-                        placeholder="Deacon's EP3",
+                        placeholder="My EP3",
                     )
                     manufacturer = st.text_input(
                         "Manufacturer",
@@ -781,7 +840,9 @@ with garage_col:
                             st.error(
                                 "The vehicle could not be saved."
                             )
-                            st.exception(error)
+                            st.exception(
+                                error
+                            )
                         else:
                             st.session_state.active_vehicle_id = (
                                 saved_vehicle["id"]
@@ -790,7 +851,12 @@ with garage_col:
                             st.rerun()
 
             st.markdown(
-                "#### 💬 Conversations"
+                """
+                <div class="vcg-rail-section">
+                    CONVERSATIONS
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
             if conversations:
@@ -800,12 +866,16 @@ with garage_col:
                     )
 
                     title = (
-                        conversation.get("title")
+                        conversation.get(
+                            "title"
+                        )
                         or "Conversation"
                     )
 
                     local_time = format_local_timestamp(
-                        conversation.get("updated_at"),
+                        conversation.get(
+                            "updated_at"
+                        ),
                         browser_timezone,
                     )
 
@@ -823,7 +893,10 @@ with garage_col:
 
                     if st.button(
                         button_label,
-                        key=f"conversation_{conversation_id}",
+                        key=(
+                            "conversation_"
+                            f"{conversation_id}"
+                        ),
                         type=(
                             "primary"
                             if is_active_conversation
@@ -838,14 +911,16 @@ with garage_col:
 
                 if active_conversation:
                     with st.expander(
-                        "Manage current conversation"
+                        "Manage conversation"
                     ):
                         with st.form(
                             "rename_conversation_form"
                         ):
                             new_title = st.text_input(
                                 "Conversation name",
-                                value=active_conversation["title"],
+                                value=active_conversation[
+                                    "title"
+                                ],
                             )
 
                             rename_submitted = (
@@ -863,17 +938,21 @@ with garage_col:
                             else:
                                 rename_conversation(
                                     supabase,
-                                    active_conversation["id"],
+                                    active_conversation[
+                                        "id"
+                                    ],
                                     new_title,
                                 )
                                 st.rerun()
 
-                        confirm_delete_conversation = st.checkbox(
-                            "Confirm permanent delete",
-                            key=(
-                                "confirm_delete_conversation_"
-                                f"{active_conversation['id']}"
-                            ),
+                        confirm_delete_conversation = (
+                            st.checkbox(
+                                "Confirm permanent delete",
+                                key=(
+                                    "confirm_delete_conversation_"
+                                    f"{active_conversation['id']}"
+                                ),
+                            )
                         )
 
                         if st.button(
@@ -882,12 +961,16 @@ with garage_col:
                                 "delete_conversation_"
                                 f"{active_conversation['id']}"
                             ),
-                            disabled=not confirm_delete_conversation,
+                            disabled=(
+                                not confirm_delete_conversation
+                            ),
                             use_container_width=True,
                         ):
                             delete_conversation(
                                 supabase,
-                                active_conversation["id"],
+                                active_conversation[
+                                    "id"
+                                ],
                             )
                             st.session_state.active_conversation_id = None
                             st.rerun()
@@ -898,484 +981,746 @@ with garage_col:
                 )
 
 
-
-# ---------- centre Garage AI ----------
-with chat_col:
-    st.markdown(
-        """
-        <div class="vcg-section-heading">
-            <div>
-                <div class="vcg-section-kicker">AI CO-PILOT</div>
-                <div class="vcg-section-title">Garage AI</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
+# ---------- active vehicle workspace ----------
+with workspace_col:
     if active_vehicle:
-        st.caption(
-            f"Discussing {active_vehicle['year']} "
-            f"{active_vehicle['manufacturer']} "
-            f"{active_vehicle['model']}"
-        )
-
-    with st.container(
-        key="vcg_chat_scroll",
-    ):
-        if active_conversation:
-            st.markdown(
-                f"#### {active_conversation['title']}"
-            )
-
-        for message in messages:
-            with st.chat_message(
-                message["role"]
-            ):
-                st.markdown(
-                    message["content"]
-                )
-
-    user_message = st.chat_input(
-        (
-            "Ask Garage AI about this vehicle..."
-            if active_vehicle
-            else "Add a vehicle to start chatting..."
-        ),
-        disabled=active_vehicle is None,
-    )
-
-    if user_message and active_vehicle:
-        if active_conversation is None:
-            try:
-                active_conversation = create_conversation(
-                    supabase,
-                    st.session_state.auth_user_id,
-                    active_vehicle["id"],
-                    make_conversation_title(
-                        user_message
-                    ),
-                )
-            except Exception as error:
-                st.error(
-                    "The conversation could not be created."
-                )
-                st.exception(error)
-                st.stop()
-
-            st.session_state.active_conversation_id = (
-                active_conversation["id"]
-            )
-
-            messages = []
-
-        try:
-            add_message(
-                supabase,
-                st.session_state.auth_user_id,
-                active_conversation["id"],
-                "user",
-                user_message,
-            )
-        except Exception as error:
-            st.error(
-                "Your message could not be saved."
-            )
-            st.exception(error)
-            st.stop()
-
-        vehicle_description = (
-            f"Profile name: {active_vehicle['profile_name']}\n"
-            f"Year: {active_vehicle['year']}\n"
-            f"Manufacturer: {active_vehicle['manufacturer']}\n"
-            f"Model: {active_vehicle['model']}\n"
-            f"Engine: {active_vehicle['engine']}\n"
-            f"Mileage: {active_vehicle['mileage']}\n"
-            f"Modifications: "
-            f"{active_vehicle['modifications'] or 'Standard or unknown'}"
-        )
-
-        with st.spinner(
-            "Garage AI is investigating..."
-        ):
-            try:
-                response = ask_ai(
-                    user_message=user_message,
-                    vehicle_description=vehicle_description,
-                    previous_response_id=(
-                        active_conversation[
-                            "last_response_id"
-                        ]
-                    ),
-                )
-            except Exception as error:
-                st.error(
-                    "Garage AI could not complete the response."
-                )
-                st.exception(error)
-                st.stop()
-
-        assistant_message = (
-            response.output_text
-        )
-
-        try:
-            add_message(
-                supabase,
-                st.session_state.auth_user_id,
-                active_conversation["id"],
-                "assistant",
-                assistant_message,
-            )
-
-            update_conversation_response_id(
-                supabase,
-                active_conversation["id"],
-                response.id,
-            )
-        except Exception as error:
-            st.error(
-                "Garage AI answered, but the response "
-                "could not be saved."
-            )
-            st.exception(error)
-            st.stop()
-
-        st.rerun()
-
-
-# ---------- right active vehicle ----------
-with vehicle_col:
-    with st.container(key="vcg_vehicle_scroll"):
-        st.markdown(
-            """
-            <div class="vcg-section-kicker">ACTIVE VEHICLE</div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        if active_vehicle:
-            st.markdown(
-                f"### {active_vehicle['year']} "
-                f"{active_vehicle['manufacturer']} "
-                f"{active_vehicle['model']}"
-            )
-
-            active_photo_url = signed_vehicle_photo(
+        active_photo_url = (
+            signed_vehicle_photo(
                 supabase,
                 active_vehicle,
             )
+        )
 
-            photo_version_key = (
-                "photo_uploader_version_"
-                f"{active_vehicle['id']}"
-            )
+        spotlight_photo, spotlight_info = st.columns(
+            [2.65, 5.35],
+            gap="medium",
+            vertical_alignment="center",
+        )
 
-            if photo_version_key not in st.session_state:
-                st.session_state[photo_version_key] = 0
-
-            photo_widget_key = (
-                "active_vehicle_photo_"
-                f"{active_vehicle['id']}_"
-                f"{st.session_state[photo_version_key]}"
-            )
-
-            st.markdown(
-                build_photo_uploader_css(
-                    photo_widget_key,
-                    active_photo_url,
-                ),
-                unsafe_allow_html=True,
-            )
-
-            uploaded_photo = st.file_uploader(
-                "Vehicle photo",
-                type=[
-                    "jpg",
-                    "jpeg",
-                    "png",
-                    "webp",
-                ],
-                key=photo_widget_key,
-                label_visibility="collapsed",
-                help=(
-                    "Click the image to add or replace "
-                    "the vehicle photo."
-                ),
-            )
-
-            processed_photo_key = (
-                "processed_photo_upload_"
-                f"{active_vehicle['id']}"
-            )
-
-            if uploaded_photo is not None:
-                upload_token = photo_upload_token(
-                    uploaded_photo
-                )
-
-                if (
-                    st.session_state.get(
-                        processed_photo_key
-                    )
-                    != upload_token
-                ):
-                    try:
-                        replace_vehicle_photo(
-                            client=supabase,
-                            owner_id=(
-                                st.session_state
-                                .auth_user_id
-                            ),
-                            vehicle_id=(
-                                active_vehicle["id"]
-                            ),
-                            old_photo_path=(
-                                active_vehicle.get(
-                                    "photo_path"
-                                )
-                            ),
-                            filename=(
-                                uploaded_photo.name
-                            ),
-                            file_bytes=(
-                                uploaded_photo.getvalue()
-                            ),
-                            content_type=(
-                                uploaded_photo.type
-                                or "image/jpeg"
-                            ),
-                        )
-                    except Exception as error:
-                        st.error(
-                            "The vehicle photo could "
-                            "not be saved."
-                        )
-                        st.exception(error)
-                    else:
-                        st.session_state[
-                            processed_photo_key
-                        ] = upload_token
-                        st.rerun()
-
-            if active_vehicle.get("photo_path"):
-                if st.button(
-                    "Remove photo",
-                    key=(
-                        "remove_active_vehicle_photo_"
-                        f"{active_vehicle['id']}"
-                    ),
-                    help=(
-                        "Remove the current vehicle photo."
-                    ),
-                    use_container_width=True,
-                ):
-                    try:
-                        remove_vehicle_photo(
-                            client=supabase,
-                            vehicle_id=(
-                                active_vehicle["id"]
-                            ),
-                            photo_path=(
-                                active_vehicle.get(
-                                    "photo_path"
-                                )
-                            ),
-                        )
-                    except Exception as error:
-                        st.error(
-                            "The vehicle photo could "
-                            "not be removed."
-                        )
-                        st.exception(error)
-                    else:
-                        st.session_state[
-                            photo_version_key
-                        ] += 1
-                        st.session_state.pop(
-                            processed_photo_key,
-                            None,
-                        )
-                        st.rerun()
-
-            stat1, stat2 = st.columns(2)
-
-            with stat1:
-                st.metric(
-                    "Year",
-                    active_vehicle["year"],
-                    border=True,
-                )
-                st.metric(
-                    "Mileage",
-                    f"{active_vehicle['mileage']:,}",
-                    border=True,
-                )
-
-            with stat2:
-                st.metric(
-                    "Engine",
-                    active_vehicle["engine"],
-                    border=True,
-                )
-                st.metric(
-                    "Profile",
-                    active_vehicle["profile_name"],
-                    border=True,
-                )
-
-            st.markdown(
-                "#### 🔧 Modifications & Build Notes"
-            )
-
-            if active_vehicle["modifications"]:
-                st.write(
-                    active_vehicle["modifications"]
-                )
-            else:
-                st.caption(
-                    "No modifications recorded yet."
-                )
-
-            with st.expander(
-                "Edit vehicle"
+        with spotlight_photo:
+            with st.container(
+                key="vcg_spotlight_photo"
             ):
-                with st.form(
-                    f"edit_vehicle_form_{active_vehicle['id']}",
-                    clear_on_submit=False,
-                ):
-                    edit_profile_name = st.text_input(
-                        "Profile name",
-                        value=active_vehicle["profile_name"],
+                if active_photo_url:
+                    st.image(
+                        active_photo_url,
+                        use_container_width=True,
                     )
-                    edit_manufacturer = st.text_input(
-                        "Manufacturer",
-                        value=active_vehicle["manufacturer"],
-                    )
-                    edit_model = st.text_input(
-                        "Model",
-                        value=active_vehicle["model"],
-                    )
-                    edit_year = st.number_input(
-                        "Year",
-                        min_value=1900,
-                        max_value=2100,
-                        step=1,
-                        value=int(active_vehicle["year"]),
-                    )
-                    edit_engine = st.text_input(
-                        "Engine",
-                        value=active_vehicle["engine"],
-                    )
-                    edit_mileage = st.number_input(
-                        "Mileage",
-                        min_value=0,
-                        step=1000,
-                        value=int(active_vehicle["mileage"]),
-                    )
-                    edit_modifications = st.text_area(
-                        "Modifications",
-                        value=(
-                            active_vehicle["modifications"]
-                            or ""
-                        ),
+                else:
+                    st.markdown(
+                        """
+                        <div class="vcg-photo-placeholder vcg-photo-spotlight">
+                            <span>🚘</span>
+                            <small>Add a vehicle photo</small>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
                     )
 
-                    update_submitted = (
-                        st.form_submit_button(
-                            "Update vehicle",
-                            type="primary",
-                            use_container_width=True,
-                        )
-                    )
+        spotlight_profile = escape(
+            str(active_vehicle["profile_name"])
+        )
+        spotlight_manufacturer = escape(
+            str(active_vehicle["manufacturer"])
+        )
+        spotlight_model = escape(
+            str(active_vehicle["model"])
+        )
+        spotlight_engine = escape(
+            str(active_vehicle["engine"])
+        )
 
-                if update_submitted:
-                    updated_vehicle_data = {
-                        "profile_name": edit_profile_name.strip(),
-                        "manufacturer": edit_manufacturer.strip(),
-                        "model": edit_model.strip(),
-                        "year": int(edit_year),
-                        "engine": edit_engine.strip(),
-                        "mileage": int(edit_mileage),
-                        "modifications": edit_modifications.strip(),
-                    }
-
-                    required_values = [
-                        updated_vehicle_data["profile_name"],
-                        updated_vehicle_data["manufacturer"],
-                        updated_vehicle_data["model"],
-                        updated_vehicle_data["engine"],
-                    ]
-
-                    if not all(required_values):
-                        st.warning(
-                            "Profile name, manufacturer, model "
-                            "and engine are required."
-                        )
-                    else:
-                        try:
-                            update_vehicle(
-                                supabase,
-                                active_vehicle["id"],
-                                updated_vehicle_data,
-                            )
-                        except Exception as error:
-                            st.error(
-                                "The vehicle could not be updated."
-                            )
-                            st.exception(error)
-                        else:
-                            st.rerun()
-
-            with st.expander(
-                "Delete vehicle"
-            ):
-                st.warning(
-                    "This permanently deletes the vehicle "
-                    "and its related conversations."
-                )
-
-                confirm_delete = st.checkbox(
-                    "Confirm permanent delete",
-                    key=f"confirm_delete_vehicle_{active_vehicle['id']}",
-                )
-
-                if st.button(
-                    "Delete vehicle",
-                    key=f"delete_vehicle_{active_vehicle['id']}",
-                    disabled=not confirm_delete,
-                    use_container_width=True,
-                ):
-                    try:
-                        delete_vehicle(
-                            supabase,
-                            active_vehicle["id"],
-                        )
-                    except Exception as error:
-                        st.error(
-                            "The vehicle could not be deleted."
-                        )
-                        st.exception(error)
-                    else:
-                        st.session_state.active_vehicle_id = None
-                        st.session_state.active_conversation_id = None
-                        st.rerun()
-
+        with spotlight_info:
             st.markdown(
-                """
-                <div class="vcg-maintenance-shell">
-                    <div class="vcg-maintenance-title">
-                        🔧 Maintenance Checklist
+                f"""
+                <div class="vcg-spotlight">
+                    <div class="vcg-section-kicker">ACTIVE VEHICLE</div>
+                    <div class="vcg-spotlight-profile">
+                        {spotlight_profile}
                     </div>
-                    <div class="vcg-maintenance-empty">
-                        Maintenance tracking is ready for the next phase.
+                    <div class="vcg-spotlight-title">
+                        {active_vehicle['year']} {spotlight_manufacturer}
+                        {spotlight_model}
+                    </div>
+                    <div class="vcg-spotlight-subtitle">
+                        {spotlight_engine}
+                    </div>
+                    <div class="vcg-status-grid">
+                        <div class="vcg-status-card">
+                            <span>MILEAGE</span>
+                            <strong>{int(active_vehicle['mileage']):,} mi</strong>
+                        </div>
+                        <div class="vcg-status-card">
+                            <span>MAINTENANCE</span>
+                            <strong>{maintenance['state']}</strong>
+                            <small>{maintenance['detail']}</small>
+                        </div>
+                        <div class="vcg-status-card">
+                            <span>BUILD</span>
+                            <strong>{len(build_items)} recorded</strong>
+                            <small>modification notes</small>
+                        </div>
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        else:
-            st.info(
-                "Add a vehicle to populate the active vehicle panel."
+        st.markdown(
+            '<div class="vcg-workspace-divider"></div>',
+            unsafe_allow_html=True,
+        )
+
+        chat_col, intelligence_col = st.columns(
+            [6.35, 3.65],
+            gap="medium",
+            vertical_alignment="top",
+        )
+
+        # ---------- Garage AI ----------
+        with chat_col:
+            st.markdown(
+                """
+                <div class="vcg-section-heading vcg-ai-heading">
+                    <div>
+                        <div class="vcg-section-kicker">AI CO-PILOT</div>
+                        <div class="vcg-section-title">Garage AI</div>
+                    </div>
+                    <div class="vcg-live-pill">LIVE VEHICLE CONTEXT</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
+
+            st.caption(
+                f"Grounded on {active_vehicle['year']} "
+                f"{active_vehicle['manufacturer']} "
+                f"{active_vehicle['model']} and the private Honda library."
+            )
+
+            with st.container(
+                key="vcg_chat_scroll",
+            ):
+                if active_conversation:
+                    st.markdown(
+                        f"#### {active_conversation['title']}"
+                    )
+                elif not messages:
+                    st.markdown(
+                        """
+                        <div class="vcg-ai-empty">
+                            <strong>Start with the car, not a blank chat.</strong>
+                            <span>
+                                Ask about a symptom, service procedure,
+                                specification or modification decision.
+                            </span>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+                for message in messages:
+                    with st.chat_message(
+                        message["role"]
+                    ):
+                        st.markdown(
+                            message["content"]
+                        )
+
+            user_message = st.chat_input(
+                "Ask Garage AI about this vehicle...",
+            )
+
+            if user_message:
+                if active_conversation is None:
+                    try:
+                        active_conversation = create_conversation(
+                            supabase,
+                            st.session_state.auth_user_id,
+                            active_vehicle[
+                                "id"
+                            ],
+                            make_conversation_title(
+                                user_message
+                            ),
+                        )
+                    except Exception as error:
+                        st.error(
+                            "The conversation could not be created."
+                        )
+                        st.exception(
+                            error
+                        )
+                        st.stop()
+
+                    st.session_state.active_conversation_id = (
+                        active_conversation[
+                            "id"
+                        ]
+                    )
+
+                    messages = []
+
+                try:
+                    add_message(
+                        supabase,
+                        st.session_state.auth_user_id,
+                        active_conversation[
+                            "id"
+                        ],
+                        "user",
+                        user_message,
+                    )
+                except Exception as error:
+                    st.error(
+                        "Your message could not be saved."
+                    )
+                    st.exception(
+                        error
+                    )
+                    st.stop()
+
+                vehicle_description = (
+                    f"Profile name: {active_vehicle['profile_name']}\n"
+                    f"Year: {active_vehicle['year']}\n"
+                    f"Manufacturer: {active_vehicle['manufacturer']}\n"
+                    f"Model: {active_vehicle['model']}\n"
+                    f"Engine: {active_vehicle['engine']}\n"
+                    f"Mileage: {active_vehicle['mileage']}\n"
+                    f"Modifications: "
+                    f"{active_vehicle['modifications'] or 'Standard or unknown'}"
+                )
+
+                with st.spinner(
+                    "Garage AI is investigating..."
+                ):
+                    try:
+                        response = ask_ai(
+                            user_message=user_message,
+                            vehicle_description=vehicle_description,
+                            previous_response_id=(
+                                active_conversation[
+                                    "last_response_id"
+                                ]
+                            ),
+                        )
+                    except Exception as error:
+                        st.error(
+                            "Garage AI could not complete the response."
+                        )
+                        st.exception(
+                            error
+                        )
+                        st.stop()
+
+                assistant_message = (
+                    response.output_text
+                )
+
+                try:
+                    add_message(
+                        supabase,
+                        st.session_state.auth_user_id,
+                        active_conversation[
+                            "id"
+                        ],
+                        "assistant",
+                        assistant_message,
+                    )
+
+                    update_conversation_response_id(
+                        supabase,
+                        active_conversation[
+                            "id"
+                        ],
+                        response.id,
+                    )
+                except Exception as error:
+                    st.error(
+                        "Garage AI answered, but the response "
+                        "could not be saved."
+                    )
+                    st.exception(
+                        error
+                    )
+                    st.stop()
+
+                st.rerun()
+
+        # ---------- vehicle intelligence ----------
+        with intelligence_col:
+            with st.container(
+                key="vcg_insights_scroll"
+            ):
+                st.markdown(
+                    """
+                    <div class="vcg-section-heading">
+                        <div>
+                            <div class="vcg-section-kicker">VEHICLE INTELLIGENCE</div>
+                            <div class="vcg-section-title">At a glance</div>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                overview_tab, maintenance_tab, build_tab = st.tabs(
+                    [
+                        "Overview",
+                        "Maintenance",
+                        "Build",
+                    ]
+                )
+
+                with overview_tab:
+                    overview_a, overview_b = st.columns(
+                        2
+                    )
+
+                    with overview_a:
+                        st.metric(
+                            "Open maintenance",
+                            maintenance[
+                                "pending_count"
+                            ],
+                            border=True,
+                        )
+
+                    with overview_b:
+                        st.metric(
+                            "Build notes",
+                            len(
+                                build_items
+                            ),
+                            border=True,
+                        )
+
+                    if maintenance[
+                        "overdue_count"
+                    ]:
+                        st.warning(
+                            f"{maintenance['overdue_count']} "
+                            "maintenance item"
+                            f"{'' if maintenance['overdue_count'] == 1 else 's'} "
+                            "have reached a recorded due point."
+                        )
+                    elif maintenance[
+                        "pending_count"
+                    ]:
+                        st.info(
+                            "Maintenance is planned with no "
+                            "recorded overdue items."
+                        )
+                    else:
+                        st.success(
+                            "No open maintenance items are recorded."
+                        )
+
+                    st.markdown(
+                        "##### Vehicle profile"
+                    )
+                    st.markdown(
+                        f"**Engine:** {spotlight_engine}  \n"
+                        f"**Mileage:** {int(active_vehicle['mileage']):,} mi  \n"
+                        f"**Profile:** {spotlight_profile}"
+                    )
+
+                with maintenance_tab:
+                    pending_items = (
+                        maintenance[
+                            "pending_items"
+                        ]
+                    )
+
+                    if pending_items:
+                        for item in pending_items[
+                            :5
+                        ]:
+                            due_label = (
+                                maintenance_due_label(
+                                    item
+                                )
+                            )
+                            st.markdown(
+                                f"**{item['title']}**"
+                            )
+                            st.caption(
+                                f"Due: {due_label}"
+                            )
+
+                            if item.get(
+                                "notes"
+                            ):
+                                st.caption(
+                                    item[
+                                        "notes"
+                                    ]
+                                )
+
+                            st.markdown(
+                                '<div class="vcg-mini-divider"></div>',
+                                unsafe_allow_html=True,
+                            )
+                    else:
+                        st.caption(
+                            "No open maintenance items recorded."
+                        )
+
+                    if maintenance[
+                        "completed_count"
+                    ]:
+                        st.caption(
+                            f"{maintenance['completed_count']} "
+                            "completed maintenance "
+                            "item"
+                            f"{'' if maintenance['completed_count'] == 1 else 's'} "
+                            "recorded."
+                        )
+
+                with build_tab:
+                    if build_items:
+                        for item in build_items[
+                            :8
+                        ]:
+                            st.markdown(
+                                f"• {item}"
+                            )
+
+                        if len(
+                            build_items
+                        ) > 8:
+                            st.caption(
+                                f"+ {len(build_items) - 8} more "
+                                "recorded build notes"
+                            )
+                    else:
+                        st.caption(
+                            "No modifications recorded yet."
+                        )
+
+                with st.expander(
+                    "Manage vehicle"
+                ):
+                    photo_version_key = (
+                        "photo_uploader_version_"
+                        f"{active_vehicle['id']}"
+                    )
+
+                    if photo_version_key not in st.session_state:
+                        st.session_state[
+                            photo_version_key
+                        ] = 0
+
+                    photo_widget_key = (
+                        "active_vehicle_photo_"
+                        f"{active_vehicle['id']}_"
+                        f"{st.session_state[photo_version_key]}"
+                    )
+
+                    st.markdown(
+                        build_photo_uploader_css(
+                            photo_widget_key,
+                            active_photo_url,
+                        ),
+                        unsafe_allow_html=True,
+                    )
+
+                    uploaded_photo = st.file_uploader(
+                        "Vehicle photo",
+                        type=[
+                            "jpg",
+                            "jpeg",
+                            "png",
+                            "webp",
+                        ],
+                        key=photo_widget_key,
+                        label_visibility="collapsed",
+                        help=(
+                            "Add or replace the vehicle photo."
+                        ),
+                    )
+
+                    processed_photo_key = (
+                        "processed_photo_upload_"
+                        f"{active_vehicle['id']}"
+                    )
+
+                    if uploaded_photo is not None:
+                        upload_token = (
+                            photo_upload_token(
+                                uploaded_photo
+                            )
+                        )
+
+                        if (
+                            st.session_state.get(
+                                processed_photo_key
+                            )
+                            != upload_token
+                        ):
+                            try:
+                                replace_vehicle_photo(
+                                    client=supabase,
+                                    owner_id=(
+                                        st.session_state
+                                        .auth_user_id
+                                    ),
+                                    vehicle_id=(
+                                        active_vehicle[
+                                            "id"
+                                        ]
+                                    ),
+                                    old_photo_path=(
+                                        active_vehicle.get(
+                                            "photo_path"
+                                        )
+                                    ),
+                                    filename=(
+                                        uploaded_photo.name
+                                    ),
+                                    file_bytes=(
+                                        uploaded_photo.getvalue()
+                                    ),
+                                    content_type=(
+                                        uploaded_photo.type
+                                        or "image/jpeg"
+                                    ),
+                                )
+                            except Exception as error:
+                                st.error(
+                                    "The vehicle photo could "
+                                    "not be saved."
+                                )
+                                st.exception(
+                                    error
+                                )
+                            else:
+                                st.session_state[
+                                    processed_photo_key
+                                ] = upload_token
+                                st.rerun()
+
+                    if active_vehicle.get(
+                        "photo_path"
+                    ):
+                        if st.button(
+                            "Remove photo",
+                            key=(
+                                "remove_active_vehicle_photo_"
+                                f"{active_vehicle['id']}"
+                            ),
+                            use_container_width=True,
+                        ):
+                            try:
+                                remove_vehicle_photo(
+                                    client=supabase,
+                                    vehicle_id=(
+                                        active_vehicle[
+                                            "id"
+                                        ]
+                                    ),
+                                    photo_path=(
+                                        active_vehicle.get(
+                                            "photo_path"
+                                        )
+                                    ),
+                                )
+                            except Exception as error:
+                                st.error(
+                                    "The vehicle photo could "
+                                    "not be removed."
+                                )
+                                st.exception(
+                                    error
+                                )
+                            else:
+                                st.session_state[
+                                    photo_version_key
+                                ] += 1
+                                st.session_state.pop(
+                                    processed_photo_key,
+                                    None,
+                                )
+                                st.rerun()
+
+                    with st.form(
+                        f"edit_vehicle_form_{active_vehicle['id']}",
+                        clear_on_submit=False,
+                    ):
+                        edit_profile_name = st.text_input(
+                            "Profile name",
+                            value=active_vehicle[
+                                "profile_name"
+                            ],
+                        )
+                        edit_manufacturer = st.text_input(
+                            "Manufacturer",
+                            value=active_vehicle[
+                                "manufacturer"
+                            ],
+                        )
+                        edit_model = st.text_input(
+                            "Model",
+                            value=active_vehicle[
+                                "model"
+                            ],
+                        )
+                        edit_year = st.number_input(
+                            "Year",
+                            min_value=1900,
+                            max_value=2100,
+                            step=1,
+                            value=int(
+                                active_vehicle[
+                                    "year"
+                                ]
+                            ),
+                        )
+                        edit_engine = st.text_input(
+                            "Engine",
+                            value=active_vehicle[
+                                "engine"
+                            ],
+                        )
+                        edit_mileage = st.number_input(
+                            "Mileage",
+                            min_value=0,
+                            step=1000,
+                            value=int(
+                                active_vehicle[
+                                    "mileage"
+                                ]
+                            ),
+                        )
+                        edit_modifications = st.text_area(
+                            "Modifications",
+                            value=(
+                                active_vehicle[
+                                    "modifications"
+                                ]
+                                or ""
+                            ),
+                        )
+
+                        update_submitted = (
+                            st.form_submit_button(
+                                "Update vehicle",
+                                type="primary",
+                                use_container_width=True,
+                            )
+                        )
+
+                    if update_submitted:
+                        updated_vehicle_data = {
+                            "profile_name": edit_profile_name.strip(),
+                            "manufacturer": edit_manufacturer.strip(),
+                            "model": edit_model.strip(),
+                            "year": int(
+                                edit_year
+                            ),
+                            "engine": edit_engine.strip(),
+                            "mileage": int(
+                                edit_mileage
+                            ),
+                            "modifications": edit_modifications.strip(),
+                        }
+
+                        required_values = [
+                            updated_vehicle_data[
+                                "profile_name"
+                            ],
+                            updated_vehicle_data[
+                                "manufacturer"
+                            ],
+                            updated_vehicle_data[
+                                "model"
+                            ],
+                            updated_vehicle_data[
+                                "engine"
+                            ],
+                        ]
+
+                        if not all(
+                            required_values
+                        ):
+                            st.warning(
+                                "Profile name, manufacturer, "
+                                "model and engine are required."
+                            )
+                        else:
+                            try:
+                                update_vehicle(
+                                    supabase,
+                                    active_vehicle[
+                                        "id"
+                                    ],
+                                    updated_vehicle_data,
+                                )
+                            except Exception as error:
+                                st.error(
+                                    "The vehicle could not be updated."
+                                )
+                                st.exception(
+                                    error
+                                )
+                            else:
+                                st.rerun()
+
+                with st.expander(
+                    "Danger zone"
+                ):
+                    st.warning(
+                        "Deleting this vehicle also removes "
+                        "its related conversations."
+                    )
+
+                    confirm_delete = st.checkbox(
+                        "Confirm permanent delete",
+                        key=(
+                            "confirm_delete_vehicle_"
+                            f"{active_vehicle['id']}"
+                        ),
+                    )
+
+                    if st.button(
+                        "Delete vehicle",
+                        key=(
+                            "delete_vehicle_"
+                            f"{active_vehicle['id']}"
+                        ),
+                        disabled=not confirm_delete,
+                        use_container_width=True,
+                    ):
+                        try:
+                            delete_vehicle(
+                                supabase,
+                                active_vehicle[
+                                    "id"
+                                ],
+                            )
+                        except Exception as error:
+                            st.error(
+                                "The vehicle could not be deleted."
+                            )
+                            st.exception(
+                                error
+                            )
+                        else:
+                            st.session_state.active_vehicle_id = None
+                            st.session_state.active_conversation_id = None
+                            st.rerun()
+
+    else:
+        st.markdown(
+            """
+            <div class="vcg-empty-garage">
+                <div class="vcg-section-kicker">YOUR GARAGE</div>
+                <h2>Add your first vehicle</h2>
+                <p>
+                    VCG becomes vehicle-specific once a car is selected.
+                    Add a vehicle from the garage rail to begin.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )

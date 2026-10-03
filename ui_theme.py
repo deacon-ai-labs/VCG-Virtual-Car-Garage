@@ -446,6 +446,191 @@ def dashboard_shell_css() -> str:
 
     return """
         <style>
+        .vcg-rail-kicker,
+        .vcg-rail-section {
+            color: var(--vcg-orange);
+            font-size: 0.68rem;
+            font-weight: 850;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .vcg-rail-title {
+            color: var(--vcg-text);
+            font-size: 1.18rem;
+            font-weight: 850;
+            margin-top: 0.12rem;
+        }
+
+        .vcg-rail-section {
+            margin-top: 1.15rem;
+            margin-bottom: 0.45rem;
+            color: #7F8FA1;
+        }
+
+        .vcg-spotlight {
+            border: 1px solid var(--vcg-border);
+            background:
+                radial-gradient(
+                    circle at 95% 0%,
+                    rgba(255, 107, 74, 0.10),
+                    transparent 35%
+                ),
+                linear-gradient(
+                    135deg,
+                    rgba(21, 31, 43, 0.98),
+                    rgba(13, 21, 30, 0.98)
+                );
+            border-radius: 18px;
+            padding: 1.25rem 1.35rem;
+            min-height: 210px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .vcg-spotlight-profile {
+            color: var(--vcg-orange);
+            font-size: 0.82rem;
+            font-weight: 750;
+            margin-bottom: 0.18rem;
+        }
+
+        .vcg-spotlight-title {
+            color: var(--vcg-text);
+            font-size: clamp(1.55rem, 2vw, 2.25rem);
+            font-weight: 900;
+            letter-spacing: -0.035em;
+            line-height: 1.05;
+        }
+
+        .vcg-spotlight-subtitle {
+            color: #AAB6C3;
+            font-size: 0.93rem;
+            margin-top: 0.45rem;
+        }
+
+        .vcg-status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.65rem;
+            margin-top: 1rem;
+        }
+
+        .vcg-status-card {
+            border: 1px solid #2B3A4B;
+            border-radius: 12px;
+            background: rgba(10, 17, 24, 0.52);
+            padding: 0.7rem 0.8rem;
+            min-width: 0;
+        }
+
+        .vcg-status-card span {
+            display: block;
+            color: #778799;
+            font-size: 0.62rem;
+            font-weight: 850;
+            letter-spacing: 0.10em;
+        }
+
+        .vcg-status-card strong {
+            display: block;
+            color: #F4F7FA;
+            font-size: 0.95rem;
+            margin-top: 0.2rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .vcg-status-card small {
+            display: block;
+            color: #8F9DAA;
+            font-size: 0.70rem;
+            margin-top: 0.08rem;
+        }
+
+        .vcg-photo-spotlight {
+            min-height: 210px;
+            margin-bottom: 0;
+        }
+
+        .st-key-vcg_spotlight_photo [data-testid="stImage"] img {
+            min-height: 210px;
+            max-height: 245px;
+            width: 100%;
+            object-fit: cover;
+            object-position: center;
+            border: 1px solid #283646;
+            box-shadow: 0 18px 40px rgba(0,0,0,0.24);
+        }
+
+        .vcg-workspace-divider {
+            height: 1px;
+            margin: 0.85rem 0;
+            background:
+                linear-gradient(
+                    90deg,
+                    rgba(255,107,74,0.35),
+                    rgba(40,54,70,0.8),
+                    transparent
+                );
+        }
+
+        .vcg-live-pill {
+            border: 1px solid rgba(255, 107, 74, 0.34);
+            background: rgba(255, 107, 74, 0.08);
+            color: #FF9A82;
+            border-radius: 999px;
+            padding: 0.32rem 0.55rem;
+            font-size: 0.61rem;
+            font-weight: 850;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+        }
+
+        .vcg-ai-empty {
+            border: 1px dashed #334456;
+            border-radius: 14px;
+            background: rgba(17, 26, 36, 0.52);
+            padding: 1.05rem;
+            margin-top: 0.45rem;
+        }
+
+        .vcg-ai-empty strong,
+        .vcg-ai-empty span {
+            display: block;
+        }
+
+        .vcg-ai-empty strong {
+            color: #F4F7FA;
+            font-size: 0.98rem;
+        }
+
+        .vcg-ai-empty span {
+            color: #8E9CAB;
+            font-size: 0.86rem;
+            line-height: 1.45;
+            margin-top: 0.25rem;
+        }
+
+        .vcg-mini-divider {
+            height: 1px;
+            background: #253342;
+            margin: 0.65rem 0;
+        }
+
+        .vcg-empty-garage {
+            border: 1px solid var(--vcg-border);
+            border-radius: 18px;
+            padding: 2rem;
+            background: #111A24;
+        }
+
+        .vcg-empty-garage p {
+            max-width: 620px;
+        }
+
         [data-testid="stAppViewContainer"] {
             overflow-y: hidden;
             overflow-x: hidden;
@@ -463,7 +648,7 @@ def dashboard_shell_css() -> str:
         }
 
         .st-key-vcg_garage_scroll,
-        .st-key-vcg_vehicle_scroll {
+        .st-key-vcg_insights_scroll {
             height: calc(100vh - 150px);
             max-height: calc(100vh - 150px);
             overflow-y: auto;
@@ -478,8 +663,8 @@ def dashboard_shell_css() -> str:
         composer. This keeps the prompt visible at normal browser zoom.
         */
         .st-key-vcg_chat_scroll {
-            height: calc(100vh - 360px);
-            max-height: calc(100vh - 360px);
+            height: calc(100vh - 515px);
+            max-height: calc(100vh - 515px);
             min-height: 220px;
             overflow-y: auto;
             overflow-x: hidden;
@@ -490,20 +675,20 @@ def dashboard_shell_css() -> str:
         }
 
         .st-key-vcg_garage_scroll::-webkit-scrollbar,
-        .st-key-vcg_vehicle_scroll::-webkit-scrollbar,
+        .st-key-vcg_insights_scroll::-webkit-scrollbar,
         .st-key-vcg_chat_scroll::-webkit-scrollbar {
             width: 7px;
         }
 
         .st-key-vcg_garage_scroll::-webkit-scrollbar-thumb,
-        .st-key-vcg_vehicle_scroll::-webkit-scrollbar-thumb,
+        .st-key-vcg_insights_scroll::-webkit-scrollbar-thumb,
         .st-key-vcg_chat_scroll::-webkit-scrollbar-thumb {
             background: #455568;
             border-radius: 999px;
         }
 
         .st-key-vcg_garage_scroll::-webkit-scrollbar-track,
-        .st-key-vcg_vehicle_scroll::-webkit-scrollbar-track,
+        .st-key-vcg_insights_scroll::-webkit-scrollbar-track,
         .st-key-vcg_chat_scroll::-webkit-scrollbar-track {
             background: transparent;
         }
@@ -517,14 +702,14 @@ def dashboard_shell_css() -> str:
 
         @media (max-height: 760px) {
             .st-key-vcg_garage_scroll,
-            .st-key-vcg_vehicle_scroll {
+            .st-key-vcg_insights_scroll {
                 height: calc(100vh - 135px);
                 max-height: calc(100vh - 135px);
             }
 
             .st-key-vcg_chat_scroll {
-                height: calc(100vh - 330px);
-                max-height: calc(100vh - 330px);
+                height: calc(100vh - 485px);
+                max-height: calc(100vh - 485px);
                 min-height: 180px;
             }
         }
@@ -563,7 +748,7 @@ def dashboard_shell_css() -> str:
             }
 
             .st-key-vcg_garage_scroll,
-            .st-key-vcg_vehicle_scroll {
+            .st-key-vcg_insights_scroll {
                 height: auto;
                 max-height: none;
                 overflow: visible;
@@ -585,6 +770,10 @@ def dashboard_shell_css() -> str:
                 bottom: auto;
                 margin-top: 0.25rem;
                 box-shadow: none;
+            }
+
+            .vcg-status-grid {
+                grid-template-columns: 1fr;
             }
 
             .vcg-photo-large {

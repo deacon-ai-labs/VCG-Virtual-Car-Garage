@@ -48,3 +48,11 @@ join pg_namespace n
   on n.oid = p.pronamespace
 where n.nspname = 'public'
   and p.proname = 'match_knowledge_chunks';
+
+
+-- Harden the RAG RPC search path to avoid role-dependent resolution.
+alter function public.match_knowledge_chunks(vector, double precision, integer)
+  set search_path = public, extensions;
+
+alter function public.match_knowledge_chunks(vector, integer, text)
+  set search_path = public, extensions;

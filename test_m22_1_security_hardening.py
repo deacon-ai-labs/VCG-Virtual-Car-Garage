@@ -9,6 +9,7 @@ USER_FACING_MODULES = (
     "maintenance_ui.py",
     "vehicle_intake_ui.py",
     "vehicle_manage_ui.py",
+    "public_garage_ui.py",
 )
 
 

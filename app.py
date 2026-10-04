@@ -26,6 +26,7 @@ from digital_twin import (
 )
 from database import (
     add_message,
+    get_supabase_client,
     create_conversation,
     delete_conversation,
     get_build_plan_items,
@@ -47,6 +48,14 @@ from database import (
 from garage_ai import ask_ai
 from maintenance_os import maintenance_health_snapshot
 from maintenance_ui import render_maintenance_os
+from public_garage_repository import (
+    ensure_public_garage_snapshot,
+    fetch_public_garage,
+)
+from public_garage_ui import (
+    render_public_garage_settings,
+    render_public_garage_showcase,
+)
 from time_utils import format_local_timestamp
 from ui_theme import (
     apply_dashboard_shell,
@@ -90,6 +99,52 @@ st.set_page_config(
 )
 
 apply_global_theme()
+
+
+public_garage_slug = st.query_params.get(
+    "garage"
+)
+
+if isinstance(
+    public_garage_slug,
+    list,
+):
+    public_garage_slug = (
+        public_garage_slug[0]
+        if public_garage_slug
+        else None
+    )
+
+if public_garage_slug:
+    public_client = None
+    public_payload = None
+
+    try:
+        public_client = get_supabase_client()
+        public_payload = fetch_public_garage(
+            public_client,
+            str(
+                public_garage_slug
+            ),
+        )
+    except Exception as error:
+        log_ui_exception(
+            error,
+            context="Public garage load failed",
+        )
+
+    if public_client is None:
+        render_wordmark()
+        st.error(
+            "This public garage could not be loaded right now."
+        )
+    else:
+        render_public_garage_showcase(
+            public_client,
+            public_payload,
+        )
+
+    st.stop()
 
 
 AUTH_STATE_KEYS = (
@@ -504,6 +559,19 @@ except Exception as error:
     )
     log_ui_exception(error)
     st.stop()
+
+
+try:
+    ensure_public_garage_snapshot(
+        supabase,
+        st.session_state.auth_user_id,
+        vehicles,
+    )
+except Exception as error:
+    log_ui_exception(
+        error,
+        context="Public garage snapshot refresh failed",
+    )
 
 
 vehicle_ids = [
@@ -1044,6 +1112,12 @@ with garage_col:
                     )
                     st.session_state.active_conversation_id = None
                     st.rerun()
+
+            render_public_garage_settings(
+                client=supabase,
+                owner_id=st.session_state.auth_user_id,
+                vehicles=vehicles,
+            )
 
             if workspace_mode == "Garage AI":
                 st.markdown(

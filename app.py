@@ -10,16 +10,12 @@ from auth import (
     sign_up,
     user_auth_error_message,
 )
-from build_planner import (
-    build_plan_snapshot,
-    format_build_plan_context,
-)
+from build_planner import build_plan_snapshot
 from build_planner_ui import render_build_planner
 from dashboard_state import apply_vehicle_selection
 from dashboard_view import modification_items
 from digital_twin import (
     build_snapshot,
-    format_build_context,
     twin_snapshot,
 )
 from database import (
@@ -35,6 +31,7 @@ from database import (
     get_messages,
     get_maintenance_items,
     get_maintenance_records,
+    get_vehicle_component_events,
     get_vehicle_components,
     get_vehicle_photo_url,
     get_vehicle_specifications,
@@ -64,6 +61,9 @@ from ui_theme import (
     apply_global_theme,
     image_data_uri,
     render_wordmark,
+)
+from vehicle_intelligence_context import (
+    build_vehicle_intelligence_context,
 )
 from virtual_workshop_ui import render_virtual_workshop
 
@@ -573,6 +573,7 @@ build_items = modification_items(
 
 twin_components = []
 twin_specifications = []
+twin_component_events = []
 twin_load_failed = False
 
 if active_vehicle:
@@ -585,9 +586,14 @@ if active_vehicle:
             supabase,
             active_vehicle["id"],
         )
+        twin_component_events = get_vehicle_component_events(
+            supabase,
+            active_vehicle["id"],
+        )
     except Exception:
         twin_components = []
         twin_specifications = []
+        twin_component_events = []
         twin_load_failed = True
 
 twin = twin_snapshot(
@@ -597,12 +603,6 @@ twin = twin_snapshot(
 
 structured_build = build_snapshot(
     twin_components
-)
-
-structured_build_context = (
-    format_build_context(
-        twin_components
-    )
 )
 
 build_plan_items = []
@@ -623,11 +623,18 @@ build_plan = build_plan_snapshot(
     twin_components,
 )
 
-build_plan_context = (
-    format_build_plan_context(
-        build_plan_items,
-        twin_components,
+vehicle_intelligence_context = (
+    build_vehicle_intelligence_context(
+        vehicle=active_vehicle,
+        components=twin_components,
+        specifications=twin_specifications,
+        maintenance_items=maintenance_items,
+        maintenance_records=maintenance_records,
+        component_events=twin_component_events,
+        build_plan_items=build_plan_items,
     )
+    if active_vehicle
+    else "No vehicle is currently selected."
 )
 
 
@@ -1244,9 +1251,14 @@ with workspace_col:
             )
 
             st.caption(
-                f"Grounded on {active_vehicle['year']} "
-                f"{active_vehicle['manufacturer']} "
-                f"{active_vehicle['model']} and the private Honda library."
+                f"Grounding loaded · "
+                f"{structured_build['installed_count']} fitted · "
+                f"{build_plan['active_count']} planned · "
+                f"{maintenance['pending_count']} open maintenance · "
+                f"{maintenance['history_count']} history · "
+                f"{twin['verified_spec_count']} verified specs · "
+                f"{len(twin_component_events)} lifecycle events · "
+                "private Honda library"
             )
 
             with st.container(
@@ -1332,20 +1344,12 @@ with workspace_col:
                     st.stop()
 
                 vehicle_description = (
-                    f"Profile name: {active_vehicle['profile_name']}\n"
-                    f"Year: {active_vehicle['year']}\n"
-                    f"Manufacturer: {active_vehicle['manufacturer']}\n"
-                    f"Model: {active_vehicle['model']}\n"
-                    f"Engine: {active_vehicle['engine']}\n"
-                    f"Mileage: {active_vehicle['mileage']}\n"
-                    "Current physical structured build "
-                    "(source of truth):\n"
-                    f"{structured_build_context}\n"
-                    "Active future build plan "
-                    "(NOT physically fitted/removed yet):\n"
-                    f"{build_plan_context}\n"
-                    "Legacy modification notes (archive only): "
-                    f"{active_vehicle['modifications'] or 'None'}"
+                    f"{active_vehicle['year']} "
+                    f"{active_vehicle['manufacturer']} "
+                    f"{active_vehicle['model']} "
+                    f"({active_vehicle['profile_name']}); "
+                    f"engine={active_vehicle['engine']}; "
+                    f"recorded_mileage={active_vehicle['mileage']} mi"
                 )
 
                 with st.spinner(
@@ -1355,6 +1359,9 @@ with workspace_col:
                         response = ask_ai(
                             user_message=user_message,
                             vehicle_description=vehicle_description,
+                            vehicle_intelligence_context=(
+                                vehicle_intelligence_context
+                            ),
                             previous_response_id=(
                                 active_conversation[
                                     "last_response_id"

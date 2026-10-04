@@ -68,6 +68,7 @@ def ask_ai(
     user_message: str,
     vehicle_description: str | None,
     previous_response_id: str | None,
+    vehicle_intelligence_context: str | None = None,
 ):
     """Send a grounded automotive question to Garage AI."""
 
@@ -84,8 +85,11 @@ def ask_ai(
         "Clearly state when a vehicle should not be driven or should "
         "be inspected by a qualified mechanic.\n\n"
 
-        "SELECTED VEHICLE:\n"
+        "SELECTED VEHICLE IDENTITY:\n"
         f"{vehicle_description or 'No vehicle is currently selected.'}\n\n"
+
+        "RECORDED VEHICLE INTELLIGENCE:\n"
+        f"{vehicle_intelligence_context or 'No structured vehicle intelligence is available.'}\n\n"
 
         "REFERENCE MATERIAL:\n"
         f"{reference_context}\n\n"
@@ -93,6 +97,25 @@ def ask_ai(
         "GROUNDING AND SOURCE-AUTHORITY RULES:\n"
         "- Use the selected vehicle information whenever relevant.\n"
         "- Do not invent missing vehicle details.\n"
+        "- Keep four categories distinct: recorded vehicle state, "
+        "authoritative technical documentation, planning metadata, and "
+        "your own diagnostic inference.\n"
+        "- RECORDED DIGITAL-TWIN STATE is the app's current record of "
+        "what is fitted/removed on this specific vehicle. Treat it as "
+        "the operational vehicle record, but not as proof of an OEM "
+        "technical specification.\n"
+        "- SERVICE HISTORY and COMPONENT LIFECYCLE EVENTS show work/events "
+        "recorded as having happened. They do not prove the component is "
+        "currently healthy or that a past repair caused/solved a present symptom.\n"
+        "- OPEN MAINTENANCE shows recorded schedules/advisories. Do not call "
+        "an interval a manufacturer requirement unless authoritative "
+        "documentation proves that schedule.\n"
+        "- VERIFIED STRUCTURED SPECIFICATIONS must still be interpreted by "
+        "source_kind/source_reference: a measurement is evidence about this "
+        "specific vehicle; a user record is a recorded value; an OEM-document "
+        "value may support an OEM specification when its source is clear.\n"
+        "- ACTIVE FUTURE BUILD PLAN is intent only and is never current "
+        "physical vehicle state.\n"
         "- Evidence labelled VEHICLE-SPECIFIC — AUTHORITATIVE has "
         "priority over all generic documentation.\n"
         "- Evidence labelled GENERIC CIVIC — SUPPLEMENTARY ONLY may "
@@ -135,7 +158,22 @@ def ask_ai(
         "- A build-plan compatibility status or note is planning metadata, "
         "not technical proof. Verify compatibility from authoritative "
         "documentation, measurements, or other reliable evidence before "
-        "presenting it as established fact."
+        "presenting it as established fact.\n\n"
+
+        "DIAGNOSTIC REASONING RULES:\n"
+        "- For troubleshooting questions, first identify the recorded facts "
+        "that matter for this exact vehicle (current parts, maintenance, "
+        "history, mileage, specifications, recent lifecycle events).\n"
+        "- Then distinguish plausible explanations from confirmed causes. "
+        "Never turn correlation in the vehicle history into causation.\n"
+        "- Prefer checks that discriminate between likely causes rather than "
+        "long generic lists. Use the exact recorded component names when relevant.\n"
+        "- If the user's recorded state conflicts with authoritative technical "
+        "documentation, point out the conflict instead of silently choosing one.\n"
+        "- For a diagnostic response, use a compact structure such as "
+        "'Recorded evidence', 'Most useful hypotheses', 'Next checks', and "
+        "'Drive risk' when those sections are relevant. Do not force this "
+        "structure onto simple factual questions."
     )
 
     request = {

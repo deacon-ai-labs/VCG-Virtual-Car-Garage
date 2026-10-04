@@ -544,3 +544,58 @@ def delete_vehicle_photo(
         )
     )
 
+
+
+def get_vehicle_components(
+    client: Client,
+    vehicle_id: int,
+) -> list[dict]:
+    """Return structured digital-twin components for one vehicle."""
+
+    response = (
+        client.table("vehicle_components")
+        .select("*")
+        .eq("vehicle_id", vehicle_id)
+        .order("sort_order")
+        .execute()
+    )
+
+    return response.data or []
+
+
+def get_vehicle_specifications(
+    client: Client,
+    vehicle_id: int,
+) -> list[dict]:
+    """Return current structured specifications for one vehicle."""
+
+    response = (
+        client.table("vehicle_specifications")
+        .select("*")
+        .eq("vehicle_id", vehicle_id)
+        .eq("is_current", True)
+        .order("label")
+        .execute()
+    )
+
+    return response.data or []
+
+
+def get_vehicle_component_events(
+    client: Client,
+    vehicle_id: int,
+) -> list[dict]:
+    """Return component lifecycle events for one vehicle, newest first."""
+
+    response = (
+        client.table("vehicle_component_events")
+        .select("*")
+        .eq("vehicle_id", vehicle_id)
+        .order(
+            "occurred_at",
+            desc=True,
+        )
+        .execute()
+    )
+
+    return response.data or []

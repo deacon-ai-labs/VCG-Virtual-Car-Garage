@@ -16,6 +16,7 @@ from dashboard_view import (
     maintenance_snapshot,
     modification_items,
 )
+from digital_twin import twin_snapshot
 from database import (
     add_message,
     add_vehicle,
@@ -25,7 +26,9 @@ from database import (
     get_conversations,
     get_messages,
     get_maintenance_items,
+    get_vehicle_components,
     get_vehicle_photo_url,
+    get_vehicle_specifications,
     get_vehicles,
     rename_conversation,
     update_conversation_response_id,
@@ -543,6 +546,30 @@ build_items = modification_items(
         if active_vehicle
         else None
     )
+)
+
+twin_components = []
+twin_specifications = []
+twin_load_failed = False
+
+if active_vehicle:
+    try:
+        twin_components = get_vehicle_components(
+            supabase,
+            active_vehicle["id"],
+        )
+        twin_specifications = get_vehicle_specifications(
+            supabase,
+            active_vehicle["id"],
+        )
+    except Exception:
+        twin_components = []
+        twin_specifications = []
+        twin_load_failed = True
+
+twin = twin_snapshot(
+    twin_components,
+    twin_specifications,
 )
 
 
@@ -1270,17 +1297,27 @@ with workspace_col:
                     unsafe_allow_html=True,
                 )
 
-                overview_tab, maintenance_tab, build_tab = st.tabs(
+                (
+                    overview_tab,
+                    twin_tab,
+                    maintenance_tab,
+                    build_tab,
+                ) = st.tabs(
                     [
                         "Overview",
+                        "Digital Twin",
                         "Maintenance",
                         "Build",
                     ]
                 )
 
                 with overview_tab:
-                    overview_a, overview_b = st.columns(
-                        2
+                    (
+                        overview_a,
+                        overview_b,
+                        overview_c,
+                    ) = st.columns(
+                        3
                     )
 
                     with overview_a:
@@ -1293,6 +1330,15 @@ with workspace_col:
                         )
 
                     with overview_b:
+                        st.metric(
+                            "Twin components",
+                            twin[
+                                "mapped_component_count"
+                            ],
+                            border=True,
+                        )
+
+                    with overview_c:
                         st.metric(
                             "Build notes",
                             len(
@@ -1330,6 +1376,93 @@ with workspace_col:
                         f"**Mileage:** {int(active_vehicle['mileage']):,} mi  \n"
                         f"**Profile:** {spotlight_profile}"
                     )
+
+                with twin_tab:
+                    twin_a, twin_b, twin_c = st.columns(
+                        3
+                    )
+
+                    with twin_a:
+                        st.metric(
+                            "Systems",
+                            twin[
+                                "system_count"
+                            ],
+                            border=True,
+                        )
+
+                    with twin_b:
+                        st.metric(
+                            "Mapped parts",
+                            twin[
+                                "mapped_component_count"
+                            ],
+                            border=True,
+                        )
+
+                    with twin_c:
+                        st.metric(
+                            "Verified specs",
+                            twin[
+                                "verified_spec_count"
+                            ],
+                            border=True,
+                        )
+
+                    if twin_load_failed:
+                        st.warning(
+                            "The structured digital twin could not be loaded."
+                        )
+                    else:
+                        st.caption(
+                            "M13 establishes the vehicle structure. "
+                            "Parts and verified specifications are populated "
+                            "as real data is added in later milestones."
+                        )
+
+                        systems = twin[
+                            "systems"
+                        ]
+
+                        if systems:
+                            left_systems, right_systems = st.columns(
+                                2
+                            )
+
+                            for index, system in enumerate(
+                                systems
+                            ):
+                                target = (
+                                    left_systems
+                                    if index % 2 == 0
+                                    else right_systems
+                                )
+
+                                with target:
+                                    mapped_count = (
+                                        twin[
+                                            "counts_by_system"
+                                        ].get(
+                                            system[
+                                                "system_key"
+                                            ],
+                                            0,
+                                        )
+                                    )
+
+                                    st.markdown(
+                                        f"**{system['name']}**"
+                                    )
+                                    st.caption(
+                                        f"{mapped_count} mapped "
+                                        f"component"
+                                        f"{'' if mapped_count == 1 else 's'}"
+                                    )
+                        else:
+                            st.info(
+                                "No digital-twin systems are available "
+                                "for this vehicle yet."
+                            )
 
                 with maintenance_tab:
                     pending_items = (

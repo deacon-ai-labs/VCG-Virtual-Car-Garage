@@ -662,6 +662,17 @@ def dashboard_shell_css() -> str:
         Reserve explicit vertical space for the Garage AI header, caption and
         composer. This keeps the prompt visible at normal browser zoom.
         */
+        .st-key-vcg_workshop_scroll {
+            height: calc(100vh - 405px);
+            max-height: calc(100vh - 405px);
+            min-height: 320px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 0.55rem;
+            scrollbar-width: thin;
+            scrollbar-color: #455568 transparent;
+        }
+
         .st-key-vcg_chat_scroll {
             height: calc(100vh - 515px);
             max-height: calc(100vh - 515px);
@@ -676,12 +687,14 @@ def dashboard_shell_css() -> str:
 
         .st-key-vcg_garage_scroll::-webkit-scrollbar,
         .st-key-vcg_insights_scroll::-webkit-scrollbar,
+        .st-key-vcg_workshop_scroll::-webkit-scrollbar,
         .st-key-vcg_chat_scroll::-webkit-scrollbar {
             width: 7px;
         }
 
         .st-key-vcg_garage_scroll::-webkit-scrollbar-thumb,
         .st-key-vcg_insights_scroll::-webkit-scrollbar-thumb,
+        .st-key-vcg_workshop_scroll::-webkit-scrollbar-thumb,
         .st-key-vcg_chat_scroll::-webkit-scrollbar-thumb {
             background: #455568;
             border-radius: 999px;
@@ -689,6 +702,7 @@ def dashboard_shell_css() -> str:
 
         .st-key-vcg_garage_scroll::-webkit-scrollbar-track,
         .st-key-vcg_insights_scroll::-webkit-scrollbar-track,
+        .st-key-vcg_workshop_scroll::-webkit-scrollbar-track,
         .st-key-vcg_chat_scroll::-webkit-scrollbar-track {
             background: transparent;
         }
@@ -705,6 +719,12 @@ def dashboard_shell_css() -> str:
             .st-key-vcg_insights_scroll {
                 height: calc(100vh - 135px);
                 max-height: calc(100vh - 135px);
+            }
+
+            .st-key-vcg_workshop_scroll {
+                height: calc(100vh - 370px);
+                max-height: calc(100vh - 370px);
+                min-height: 260px;
             }
 
             .st-key-vcg_chat_scroll {
@@ -748,7 +768,8 @@ def dashboard_shell_css() -> str:
             }
 
             .st-key-vcg_garage_scroll,
-            .st-key-vcg_insights_scroll {
+            .st-key-vcg_insights_scroll,
+            .st-key-vcg_workshop_scroll {
                 height: auto;
                 max-height: none;
                 overflow: visible;

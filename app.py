@@ -65,6 +65,7 @@ from ui_theme import (
     image_data_uri,
     render_wordmark,
 )
+from virtual_workshop_ui import render_virtual_workshop
 
 
 st.set_page_config(
@@ -1165,6 +1166,7 @@ with workspace_col:
             "Vehicle workspace",
             [
                 "Garage AI",
+                "Virtual Workshop",
                 "Maintenance OS",
                 "Build Planner",
             ],
@@ -1175,6 +1177,24 @@ with workspace_col:
                 f"{active_vehicle['id']}"
             ),
         )
+
+        if workspace_mode == "Virtual Workshop":
+            with st.container(
+                key="vcg_workshop_scroll"
+            ):
+                render_virtual_workshop(
+                    vehicle=active_vehicle,
+                    components=twin_components,
+                    plan_items=build_plan_items,
+                    maintenance_items=maintenance_items,
+                    maintenance_records=maintenance_records,
+                    specifications=twin_specifications,
+                    workspace_state_key=(
+                        "vehicle_workspace_mode_"
+                        f"{active_vehicle['id']}"
+                    ),
+                )
+            st.stop()
 
         if workspace_mode == "Maintenance OS":
             render_maintenance_os(

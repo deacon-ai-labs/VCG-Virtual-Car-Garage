@@ -11,11 +11,7 @@ from auth import (
     user_auth_error_message,
 )
 from dashboard_state import apply_vehicle_selection
-from dashboard_view import (
-    maintenance_due_label,
-    maintenance_snapshot,
-    modification_items,
-)
+from dashboard_view import modification_items
 from digital_twin import (
     build_snapshot,
     format_build_context,
@@ -32,6 +28,7 @@ from database import (
     get_conversations,
     get_messages,
     get_maintenance_items,
+    get_maintenance_records,
     get_vehicle_components,
     get_vehicle_photo_url,
     get_vehicle_specifications,
@@ -42,6 +39,11 @@ from database import (
     update_vehicle_component,
 )
 from garage_ai import ask_ai
+from maintenance_os import (
+    maintenance_due_label,
+    maintenance_health_snapshot,
+)
+from maintenance_ui import render_maintenance_os
 from photo_service import (
     remove_vehicle_photo,
     replace_vehicle_photo,
@@ -521,6 +523,7 @@ if active_conversation:
 
 
 maintenance_items = []
+maintenance_records = []
 maintenance_load_failed = False
 
 if active_vehicle:
@@ -529,13 +532,19 @@ if active_vehicle:
             supabase,
             active_vehicle["id"],
         )
+        maintenance_records = get_maintenance_records(
+            supabase,
+            active_vehicle["id"],
+        )
     except Exception:
         maintenance_items = []
+        maintenance_records = []
         maintenance_load_failed = True
 
 
-maintenance = maintenance_snapshot(
+maintenance = maintenance_health_snapshot(
     maintenance_items,
+    maintenance_records,
     (
         int(active_vehicle["mileage"])
         if active_vehicle
@@ -1121,6 +1130,31 @@ with workspace_col:
             unsafe_allow_html=True,
         )
 
+        workspace_mode = st.radio(
+            "Vehicle workspace",
+            [
+                "Garage AI",
+                "Maintenance OS",
+            ],
+            horizontal=True,
+            label_visibility="collapsed",
+            key=(
+                "vehicle_workspace_mode_"
+                f"{active_vehicle['id']}"
+            ),
+        )
+
+        if workspace_mode == "Maintenance OS":
+            render_maintenance_os(
+                client=supabase,
+                owner_id=st.session_state.auth_user_id,
+                vehicle=active_vehicle,
+                items=maintenance_items,
+                records=maintenance_records,
+                components=twin_components,
+            )
+            st.stop()
+
         chat_col, intelligence_col = st.columns(
             [6.35, 3.65],
             gap="medium",
@@ -1376,11 +1410,20 @@ with workspace_col:
                             "have reached a recorded due point."
                         )
                     elif maintenance[
+                        "due_soon_count"
+                    ]:
+                        st.warning(
+                            f"{maintenance['due_soon_count']} "
+                            "maintenance item"
+                            f"{'' if maintenance['due_soon_count'] == 1 else 's'} "
+                            "are approaching a recorded due point."
+                        )
+                    elif maintenance[
                         "pending_count"
                     ]:
                         st.info(
                             "Maintenance is planned with no "
-                            "recorded overdue items."
+                            "recorded overdue or due-soon items."
                         )
                     else:
                         st.success(
@@ -1525,14 +1568,13 @@ with workspace_col:
                         )
 
                     if maintenance[
-                        "completed_count"
+                        "history_count"
                     ]:
                         st.caption(
-                            f"{maintenance['completed_count']} "
-                            "completed maintenance "
-                            "item"
-                            f"{'' if maintenance['completed_count'] == 1 else 's'} "
-                            "recorded."
+                            f"{maintenance['history_count']} "
+                            "service-history record"
+                            f"{'' if maintenance['history_count'] == 1 else 's'} "
+                            "stored."
                         )
 
                 with build_tab:

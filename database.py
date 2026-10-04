@@ -704,3 +704,96 @@ def add_vehicle_component_event(
         )
 
     return response.data[0]
+
+
+def get_maintenance_records(
+    client: Client,
+    vehicle_id: int,
+) -> list[dict]:
+    """Return append-only maintenance history for one vehicle."""
+
+    response = (
+        client.table(
+            "maintenance_records"
+        )
+        .select("*")
+        .eq(
+            "vehicle_id",
+            vehicle_id,
+        )
+        .order(
+            "performed_at",
+            desc=True,
+        )
+        .execute()
+    )
+
+    return response.data or []
+
+
+def complete_maintenance_item(
+    client: Client,
+    item_id: str,
+    performed_at,
+    performed_mileage: int | None = None,
+    cost_gbp: float | None = None,
+    provider: str | None = None,
+    notes: str | None = None,
+    evidence_reference: str | None = None,
+):
+    """Atomically record completed work and advance recurring schedules."""
+
+    response = (
+        client.rpc(
+            "complete_maintenance_item",
+            {
+                "p_item_id": item_id,
+                "p_performed_at": performed_at.isoformat(),
+                "p_performed_mileage": performed_mileage,
+                "p_cost_gbp": cost_gbp,
+                "p_provider": provider,
+                "p_notes": notes,
+                "p_evidence_reference": evidence_reference,
+            },
+        )
+        .execute()
+    )
+
+    return response.data
+
+
+def record_maintenance_history(
+    client: Client,
+    vehicle_id: int,
+    title: str,
+    category: str,
+    performed_at,
+    performed_mileage: int | None = None,
+    cost_gbp: float | None = None,
+    provider: str | None = None,
+    notes: str | None = None,
+    evidence_reference: str | None = None,
+    twin_component_id: str | None = None,
+):
+    """Atomically add historic work and optional component lifecycle evidence."""
+
+    response = (
+        client.rpc(
+            "record_maintenance_history",
+            {
+                "p_vehicle_id": vehicle_id,
+                "p_title": title,
+                "p_category": category,
+                "p_performed_at": performed_at.isoformat(),
+                "p_performed_mileage": performed_mileage,
+                "p_cost_gbp": cost_gbp,
+                "p_provider": provider,
+                "p_notes": notes,
+                "p_evidence_reference": evidence_reference,
+                "p_twin_component_id": twin_component_id,
+            },
+        )
+        .execute()
+    )
+
+    return response.data

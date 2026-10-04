@@ -1,44 +1,42 @@
 from __future__ import annotations
 
 
-WORKSPACES = (
+PRIMARY_WORKSPACES = (
     {
-        "name": "Vehicle Home",
-        "short_name": "Home",
-        "icon": "⌂",
+        "name": "Virtual Twin",
+        "short_name": "Twin",
+        "icon": "◇",
     },
     {
         "name": "Garage AI",
         "short_name": "Garage AI",
         "icon": "✦",
     },
-    {
-        "name": "Virtual Workshop",
-        "short_name": "Workshop",
-        "icon": "◇",
-    },
-    {
-        "name": "Diagnostics",
-        "short_name": "Diagnostics",
-        "icon": "△",
-    },
-    {
-        "name": "Maintenance OS",
-        "short_name": "Maintenance",
-        "icon": "◉",
-    },
-    {
-        "name": "Build Planner",
-        "short_name": "Build",
-        "icon": "＋",
-    },
 )
 
+CONTEXTUAL_WORKSPACES = (
+    "Virtual Workshop",
+    "Diagnostics",
+    "Maintenance OS",
+    "Build Planner",
+)
 
-def workspace_names() -> tuple[str, ...]:
+LEGACY_WORKSPACE_ALIASES = {
+    "Vehicle Home": "Virtual Twin",
+}
+
+
+def primary_workspace_names() -> tuple[str, ...]:
     return tuple(
         workspace["name"]
-        for workspace in WORKSPACES
+        for workspace in PRIMARY_WORKSPACES
+    )
+
+
+def allowed_workspace_names() -> tuple[str, ...]:
+    return (
+        *primary_workspace_names(),
+        *CONTEXTUAL_WORKSPACES,
     )
 
 
@@ -54,15 +52,20 @@ def workspace_state_key(
 def normalize_workspace(
     value: str | None,
 ) -> str:
-    if value in workspace_names():
+    normalized = LEGACY_WORKSPACE_ALIASES.get(
+        value,
+        value,
+    )
+
+    if normalized in allowed_workspace_names():
         return str(
-            value
+            normalized
         )
 
-    return "Vehicle Home"
+    return "Virtual Twin"
 
 
-def workspace_badges(
+def contextual_badges(
     maintenance: dict,
     diagnostics: dict,
     build_plan: dict,

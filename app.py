@@ -53,21 +53,20 @@ from ui_theme import (
     image_data_uri,
     render_wordmark,
 )
-from vehicle_home import vehicle_home_snapshot
-from vehicle_home_ui import render_vehicle_home
 from vehicle_intelligence_context import (
     build_vehicle_intelligence_context,
 )
 from vehicle_manage_ui import render_vehicle_management
-from vehicle_shell_ui import render_vehicle_command_deck
+from virtual_twin_v0 import virtual_twin_v0_snapshot
+from virtual_twin_v0_ui import render_virtual_twin_v0
 from virtual_workshop_ui import render_virtual_workshop
 from workspace_navigation import (
+    contextual_badges,
     normalize_workspace,
-    workspace_badges,
     workspace_state_key,
 )
 from workspace_navigation_ui import (
-    render_workspace_navigation,
+    render_primary_navigation,
 )
 
 
@@ -744,18 +743,22 @@ if workspace_key:
         workspace_key
     ] = workspace_mode
 
-workspace_badge_counts = workspace_badges(
+contextual_badge_counts = contextual_badges(
     maintenance,
     diagnostic_snapshot,
     build_plan,
 )
 
-home_snapshot = vehicle_home_snapshot(
+twin_v0_snapshot = virtual_twin_v0_snapshot(
+    vehicle=(
+        active_vehicle
+        or {}
+    ),
     maintenance=maintenance,
     diagnostics=diagnostic_snapshot,
     build_plan=build_plan,
-    twin=twin,
     structured_build=structured_build,
+    twin=twin,
     component_events=twin_component_events,
     maintenance_records=maintenance_records,
 )
@@ -806,7 +809,7 @@ st.markdown(
 )
 
 
-# ---------- M12 dashboard shell ----------
+# ---------- V0 garage shell ----------
 if st.session_state.garage_collapsed:
     layout = [0.62, 9.38]
 else:
@@ -1202,18 +1205,6 @@ with garage_col:
                         "No saved conversations yet."
                     )
     
-            else:
-                st.markdown(
-                    """
-                    <div class="vcg-rail-section">
-                        VEHICLE OS
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                st.caption(
-                    "Garage AI conversations appear here when the AI workspace is open."
-                )
 
 # ---------- active vehicle workspace ----------
 with workspace_col:
@@ -1225,37 +1216,25 @@ with workspace_col:
             )
         )
 
-        render_vehicle_command_deck(
-            vehicle=active_vehicle,
-            photo_url=active_photo_url,
-            maintenance=maintenance,
-            diagnostics=diagnostic_snapshot,
-            build_plan=build_plan,
-            structured_build=structured_build,
-        )
-
-        render_workspace_navigation(
+        render_primary_navigation(
             state_key=workspace_key,
             current_workspace=workspace_mode,
-            badges=workspace_badge_counts,
         )
 
-        if workspace_mode == "Vehicle Home":
+        if workspace_mode == "Virtual Twin":
             with st.container(
-                key="vcg_home_scroll"
+                key="vcg_twin_scroll"
             ):
-                render_vehicle_home(
+                render_virtual_twin_v0(
                     vehicle=active_vehicle,
-                    snapshot=home_snapshot,
-                    structured_build=structured_build,
-                    maintenance=maintenance,
+                    photo_url=active_photo_url,
+                    snapshot=twin_v0_snapshot,
                     workspace_state_key=workspace_key,
+                    contextual_badges=contextual_badge_counts,
                 )
 
                 st.divider()
-                st.markdown(
-                    "### Vehicle settings"
-                )
+
                 render_vehicle_management(
                     client=supabase,
                     owner_id=st.session_state.auth_user_id,

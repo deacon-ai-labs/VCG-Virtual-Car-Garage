@@ -752,6 +752,162 @@ def dashboard_shell_css() -> str:
             max-height: 88px;
         }
 
+        .st-key-vcg_primary_nav {
+            max-width: 330px;
+            margin: 0 0 0.55rem auto;
+        }
+
+        .st-key-vcg_primary_nav .stButton > button {
+            min-height: 38px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            padding-left: 0.65rem;
+            padding-right: 0.65rem;
+        }
+
+        .vcg-twin-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin: 0.15rem 0 0.65rem 0;
+        }
+
+        .vcg-twin-profile {
+            color: #F4F7FA;
+            font-size: clamp(1.65rem, 2.4vw, 2.45rem);
+            font-weight: 900;
+            line-height: 1.02;
+            letter-spacing: -0.045em;
+        }
+
+        .vcg-twin-identity {
+            color: #A9B5C2;
+            font-size: 0.90rem;
+            margin-top: 0.28rem;
+        }
+
+        .vcg-twin-engine {
+            color: #7F8FA0;
+            font-size: 0.76rem;
+            margin-top: 0.10rem;
+        }
+
+        .vcg-owned-pill {
+            border: 1px solid rgba(85, 214, 141, 0.36);
+            background: rgba(85, 214, 141, 0.08);
+            color: #8BE5B2;
+            border-radius: 999px;
+            padding: 0.34rem 0.62rem;
+            font-size: 0.62rem;
+            font-weight: 850;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+        }
+
+        .st-key-vcg_twin_hero {
+            border: 1px solid #29394A;
+            border-radius: 18px;
+            overflow: hidden;
+            background:
+                radial-gradient(
+                    circle at 50% 50%,
+                    rgba(94, 155, 203, 0.13),
+                    transparent 42%
+                ),
+                #0E161F;
+            box-shadow: 0 20px 48px rgba(0,0,0,0.24);
+            margin-bottom: 0.65rem;
+        }
+
+        .st-key-vcg_twin_hero [data-testid="stImage"] {
+            margin: 0;
+        }
+
+        .st-key-vcg_twin_hero [data-testid="stImage"] img {
+            display: block;
+            width: 100%;
+            height: min(42vh, 430px);
+            min-height: 300px;
+            object-fit: cover;
+            object-position: center;
+            border-radius: 0;
+        }
+
+        .vcg-twin-placeholder {
+            min-height: min(42vh, 430px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.30rem;
+            color: #7F8FA0;
+        }
+
+        .vcg-twin-placeholder span {
+            font-size: 3rem;
+        }
+
+        .vcg-twin-placeholder strong {
+            color: #E8EDF2;
+            font-size: 1rem;
+        }
+
+        .vcg-twin-placeholder small {
+            color: #768697;
+        }
+
+        .st-key-vcg_twin_stats {
+            margin: 0.35rem 0 0.55rem 0;
+        }
+
+        .st-key-vcg_twin_stats [data-testid="stMetric"] {
+            min-height: 88px;
+            border-color: #29394A !important;
+            background: rgba(17, 26, 36, 0.76);
+        }
+
+        .st-key-vcg_twin_actions {
+            border: 1px solid #29394A;
+            border-radius: 16px;
+            background: rgba(15, 23, 32, 0.86);
+            padding: 0.45rem;
+            margin: 0.35rem 0 0.55rem 0;
+        }
+
+        .st-key-vcg_twin_actions .stButton > button {
+            min-height: 48px;
+            border-radius: 12px;
+            font-size: 0.76rem;
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+            white-space: nowrap;
+        }
+
+        .st-key-vcg_twin_scroll {
+            height: calc(100vh - 205px);
+            max-height: calc(100vh - 205px);
+            min-height: 420px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 0.40rem;
+            scrollbar-width: thin;
+            scrollbar-color: #455568 transparent;
+        }
+
+        .st-key-vcg_twin_scroll::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        .st-key-vcg_twin_scroll::-webkit-scrollbar-thumb {
+            background: #455568;
+            border-radius: 999px;
+        }
+
+        .st-key-vcg_twin_scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
         .vcg-ai-empty {
             border: 1px dashed #334456;
             border-radius: 14px;
@@ -890,6 +1046,12 @@ def dashboard_shell_css() -> str:
         }
 
         @media (max-height: 760px) {
+            .st-key-vcg_twin_scroll {
+                height: calc(100vh - 185px);
+                max-height: calc(100vh - 185px);
+                min-height: 320px;
+            }
+
             .st-key-vcg_garage_scroll,
             .st-key-vcg_insights_scroll {
                 height: calc(100vh - 135px);
@@ -947,6 +1109,7 @@ def dashboard_shell_css() -> str:
 
             .st-key-vcg_garage_scroll,
             .st-key-vcg_insights_scroll,
+            .st-key-vcg_twin_scroll,
             .st-key-vcg_home_scroll,
             .st-key-vcg_workspace_scroll,
             .st-key-vcg_workshop_scroll,
@@ -980,6 +1143,52 @@ def dashboard_shell_css() -> str:
 
             .vcg-command-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .st-key-vcg_primary_nav {
+                max-width: none;
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .st-key-vcg_primary_nav [data-testid="stHorizontalBlock"],
+            .st-key-vcg_twin_stats [data-testid="stHorizontalBlock"],
+            .st-key-vcg_twin_actions [data-testid="stHorizontalBlock"] {
+                flex-wrap: nowrap !important;
+                gap: 0.35rem !important;
+            }
+
+            .st-key-vcg_primary_nav [data-testid="column"],
+            .st-key-vcg_twin_stats [data-testid="column"],
+            .st-key-vcg_twin_actions [data-testid="column"] {
+                flex: 1 1 0 !important;
+                width: auto !important;
+                min-width: 0 !important;
+            }
+
+            .st-key-vcg_twin_hero [data-testid="stImage"] img {
+                height: 42vh;
+                min-height: 250px;
+                max-height: 380px;
+            }
+
+            .vcg-twin-heading {
+                gap: 0.6rem;
+            }
+
+            .vcg-twin-profile {
+                font-size: 1.65rem;
+            }
+
+            .st-key-vcg_twin_stats [data-testid="stMetric"] {
+                min-height: 76px;
+                padding: 0.55rem !important;
+            }
+
+            .st-key-vcg_twin_actions .stButton > button {
+                min-height: 44px;
+                font-size: 0.68rem;
+                padding: 0.25rem;
             }
 
             .vcg-command-deck {

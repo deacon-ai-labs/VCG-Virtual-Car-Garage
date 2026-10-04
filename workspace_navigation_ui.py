@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from workspace_navigation import WORKSPACES
+from workspace_navigation import PRIMARY_WORKSPACES
 
 
 def _set_workspace(
@@ -14,54 +14,34 @@ def _set_workspace(
     ] = workspace_name
 
 
-def render_workspace_navigation(
+def render_primary_navigation(
     state_key: str,
     current_workspace: str,
-    badges: dict[str, int] | None = None,
 ) -> None:
-    """Render the primary vehicle workspace navigation."""
-
-    badges = badges or {}
+    """Render only the persistent V0 vehicle destinations."""
 
     with st.container(
-        key="vcg_workspace_nav"
+        key="vcg_primary_nav"
     ):
         columns = st.columns(
             len(
-                WORKSPACES
+                PRIMARY_WORKSPACES
             ),
             gap="small",
         )
 
         for column, workspace in zip(
             columns,
-            WORKSPACES,
+            PRIMARY_WORKSPACES,
         ):
             with column:
-                badge = int(
-                    badges.get(
-                        workspace[
-                            "name"
-                        ],
-                        0,
-                    )
-                    or 0
-                )
-
-                label = (
-                    f"{workspace['icon']} "
-                    f"{workspace['short_name']}"
-                )
-
-                if badge:
-                    label += (
-                        f" · {badge}"
-                    )
-
                 st.button(
-                    label,
+                    (
+                        f"{workspace['icon']} "
+                        f"{workspace['short_name']}"
+                    ),
                     key=(
-                        "workspace_nav_"
+                        "primary_nav_"
                         + workspace[
                             "name"
                         ].lower().replace(

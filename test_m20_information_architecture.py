@@ -17,13 +17,9 @@ class TestM20InformationArchitecture(unittest.TestCase):
             encoding="utf-8"
         )
 
-    def test_vehicle_home_replaces_old_workspace_radio_as_primary_navigation(self):
+    def test_primary_navigation_replaces_old_workspace_radio(self):
         self.assertIn(
-            "render_workspace_navigation(",
-            self.app_source,
-        )
-        self.assertIn(
-            'if workspace_mode == "Vehicle Home":',
+            "render_primary_navigation(",
             self.app_source,
         )
         self.assertNotIn(
@@ -31,17 +27,24 @@ class TestM20InformationArchitecture(unittest.TestCase):
             self.app_source,
         )
 
-    def test_vehicle_settings_live_on_vehicle_home(self):
-        home_index = self.app_source.index(
-            'if workspace_mode == "Vehicle Home":'
+    def test_vehicle_management_is_not_buried_in_garage_ai(self):
+        twin_index = self.app_source.index(
+            'if workspace_mode == "Virtual Twin":'
         )
         settings_index = self.app_source.index(
             "render_vehicle_management(",
         )
+        ai_index = self.app_source.index(
+            "# ---------- Garage AI ----------"
+        )
 
         self.assertGreater(
             settings_index,
-            home_index,
+            twin_index,
+        )
+        self.assertLess(
+            settings_index,
+            ai_index,
         )
         self.assertNotIn(
             "At a glance",
@@ -57,14 +60,10 @@ class TestM20InformationArchitecture(unittest.TestCase):
             "CONVERSATIONS",
             self.app_source,
         )
-        self.assertIn(
-            "Garage AI conversations appear here when the AI workspace is open.",
-            self.app_source,
-        )
 
     def test_long_workspaces_use_bounded_app_panes(self):
         self.assertIn(
-            'key="vcg_home_scroll"',
+            'key="vcg_twin_scroll"',
             self.app_source,
         )
         self.assertIn(
@@ -80,21 +79,17 @@ class TestM20InformationArchitecture(unittest.TestCase):
             self.app_source,
         )
 
-    def test_shell_styles_exist_for_command_deck_and_navigation(self):
+    def test_shell_styles_exist_for_primary_navigation_and_twin(self):
         self.assertIn(
-            ".vcg-command-deck",
+            ".st-key-vcg_primary_nav",
             self.theme_source,
         )
         self.assertIn(
-            ".st-key-vcg_workspace_nav",
+            ".vcg-twin-heading",
             self.theme_source,
         )
         self.assertIn(
-            ".vcg-home-hero",
-            self.theme_source,
-        )
-        self.assertIn(
-            ".st-key-vcg_home_scroll",
+            ".st-key-vcg_twin_scroll",
             self.theme_source,
         )
 

@@ -1,24 +1,33 @@
 import unittest
 
 from workspace_navigation import (
+    allowed_workspace_names,
+    contextual_badges,
     normalize_workspace,
-    workspace_badges,
-    workspace_names,
+    primary_workspace_names,
     workspace_state_key,
 )
 
 
 class TestWorkspaceNavigation(unittest.TestCase):
 
-    def test_vehicle_home_is_default_workspace(self):
+    def test_virtual_twin_is_default_workspace(self):
         self.assertEqual(
             normalize_workspace(
                 None
             ),
-            "Vehicle Home",
+            "Virtual Twin",
         )
 
-    def test_known_workspace_is_preserved(self):
+    def test_legacy_vehicle_home_migrates_to_virtual_twin(self):
+        self.assertEqual(
+            normalize_workspace(
+                "Vehicle Home"
+            ),
+            "Virtual Twin",
+        )
+
+    def test_contextual_workspace_is_preserved_for_internal_navigation(self):
         self.assertEqual(
             normalize_workspace(
                 "Diagnostics"
@@ -26,17 +35,18 @@ class TestWorkspaceNavigation(unittest.TestCase):
             "Diagnostics",
         )
 
-    def test_workspace_names_include_core_vehicle_os_pages(self):
-        names = workspace_names()
+    def test_primary_navigation_is_intentionally_small(self):
+        self.assertEqual(
+            primary_workspace_names(),
+            (
+                "Virtual Twin",
+                "Garage AI",
+            ),
+        )
 
-        self.assertIn(
-            "Vehicle Home",
-            names,
-        )
-        self.assertIn(
-            "Garage AI",
-            names,
-        )
+    def test_contextual_tools_remain_available_under_the_twin(self):
+        names = allowed_workspace_names()
+
         self.assertIn(
             "Virtual Workshop",
             names,
@@ -54,8 +64,8 @@ class TestWorkspaceNavigation(unittest.TestCase):
             names,
         )
 
-    def test_badges_use_live_workload_counts(self):
-        badges = workspace_badges(
+    def test_badges_use_live_contextual_workload_counts(self):
+        badges = contextual_badges(
             {
                 "pending_count": 2,
             },

@@ -599,3 +599,108 @@ def get_vehicle_component_events(
     )
 
     return response.data or []
+
+
+def add_vehicle_component(
+    client: Client,
+    owner_id: str,
+    vehicle_id: int,
+    component: dict,
+) -> dict:
+    """Create one structured vehicle component."""
+
+    component_data = dict(
+        component
+    )
+    component_data["owner_id"] = (
+        owner_id
+    )
+    component_data["vehicle_id"] = (
+        vehicle_id
+    )
+
+    response = (
+        client.table("vehicle_components")
+        .insert(component_data)
+        .select("*")
+        .execute()
+    )
+
+    if not response.data:
+        raise RuntimeError(
+            "Supabase did not return the saved vehicle component."
+        )
+
+    return response.data[0]
+
+
+def update_vehicle_component(
+    client: Client,
+    component_id: str,
+    changes: dict,
+) -> dict:
+    """Update one visible structured vehicle component."""
+
+    component_changes = dict(
+        changes
+    )
+    component_changes["updated_at"] = (
+        datetime.now(
+            timezone.utc
+        ).isoformat()
+    )
+
+    response = (
+        client.table("vehicle_components")
+        .update(component_changes)
+        .eq(
+            "id",
+            component_id,
+        )
+        .select("*")
+        .execute()
+    )
+
+    if not response.data:
+        raise RuntimeError(
+            "Supabase did not return the updated vehicle component."
+        )
+
+    return response.data[0]
+
+
+def add_vehicle_component_event(
+    client: Client,
+    owner_id: str,
+    vehicle_id: int,
+    component_id: str,
+    event_type: str,
+    notes: str | None = None,
+    mileage: int | None = None,
+) -> dict:
+    """Record one lifecycle or catalogue event for a component."""
+
+    event_data = {
+        "owner_id": owner_id,
+        "vehicle_id": vehicle_id,
+        "component_id": component_id,
+        "event_type": event_type,
+        "notes": notes,
+        "mileage": mileage,
+    }
+
+    response = (
+        client.table(
+            "vehicle_component_events"
+        )
+        .insert(event_data)
+        .select("*")
+        .execute()
+    )
+
+    if not response.data:
+        raise RuntimeError(
+            "Supabase did not return the saved component event."
+        )
+
+    return response.data[0]

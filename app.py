@@ -16,10 +16,16 @@ from dashboard_view import (
     maintenance_snapshot,
     modification_items,
 )
-from digital_twin import twin_snapshot
+from digital_twin import (
+    build_snapshot,
+    format_build_context,
+    twin_snapshot,
+)
 from database import (
     add_message,
     add_vehicle,
+    add_vehicle_component,
+    add_vehicle_component_event,
     create_conversation,
     delete_conversation,
     delete_vehicle,
@@ -33,6 +39,7 @@ from database import (
     rename_conversation,
     update_conversation_response_id,
     update_vehicle,
+    update_vehicle_component,
 )
 from garage_ai import ask_ai
 from photo_service import (
@@ -202,7 +209,7 @@ def show_auth_screen() -> None:
                 submitted = st.form_submit_button(
                     "Sign In  →",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
             if submitted:
@@ -254,7 +261,7 @@ def show_auth_screen() -> None:
                 create_submitted = st.form_submit_button(
                     "Create Account  →",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
             if create_submitted:
@@ -572,6 +579,16 @@ twin = twin_snapshot(
     twin_specifications,
 )
 
+structured_build = build_snapshot(
+    twin_components
+)
+
+structured_build_context = (
+    format_build_context(
+        twin_components
+    )
+)
+
 
 # ---------- top bar ----------
 top_brand, top_account = st.columns(
@@ -600,7 +617,7 @@ with top_account:
     with signout_col:
         if st.button(
             "Sign out",
-            use_container_width=True,
+            width="stretch",
         ):
             try:
                 sign_out(
@@ -641,7 +658,7 @@ with garage_col:
                 "»",
                 key="expand_garage",
                 help="Expand My Garage",
-                use_container_width=True,
+                width="stretch",
             ):
                 st.session_state.garage_collapsed = False
                 st.rerun()
@@ -666,7 +683,7 @@ with garage_col:
                         if is_active
                         else "secondary"
                     ),
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     new_state = apply_vehicle_selection(
                         st.session_state.active_vehicle_id,
@@ -702,7 +719,7 @@ with garage_col:
                     "‹",
                     key="collapse_garage",
                     help="Collapse My Garage",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     st.session_state.garage_collapsed = True
                     st.rerun()
@@ -726,7 +743,7 @@ with garage_col:
                     if photo_url:
                         st.image(
                             photo_url,
-                            use_container_width=True,
+                            width="stretch",
                         )
                     else:
                         st.markdown(
@@ -762,7 +779,7 @@ with garage_col:
                             if is_active
                             else "secondary"
                         ),
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         new_state = apply_vehicle_selection(
                             st.session_state.active_vehicle_id,
@@ -823,7 +840,7 @@ with garage_col:
                         st.form_submit_button(
                             "Save vehicle",
                             type="primary",
-                            use_container_width=True,
+                            width="stretch",
                         )
                     )
 
@@ -935,7 +952,7 @@ with garage_col:
                             if is_active_conversation
                             else "secondary"
                         ),
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         st.session_state.active_conversation_id = (
                             conversation_id
@@ -959,7 +976,7 @@ with garage_col:
                             rename_submitted = (
                                 st.form_submit_button(
                                     "Rename",
-                                    use_container_width=True,
+                                    width="stretch",
                                 )
                             )
 
@@ -997,7 +1014,7 @@ with garage_col:
                             disabled=(
                                 not confirm_delete_conversation
                             ),
-                            use_container_width=True,
+                            width="stretch",
                         ):
                             delete_conversation(
                                 supabase,
@@ -1037,7 +1054,7 @@ with workspace_col:
                 if active_photo_url:
                     st.image(
                         active_photo_url,
-                        use_container_width=True,
+                        width="stretch",
                     )
                 else:
                     st.markdown(
@@ -1220,8 +1237,10 @@ with workspace_col:
                     f"Model: {active_vehicle['model']}\n"
                     f"Engine: {active_vehicle['engine']}\n"
                     f"Mileage: {active_vehicle['mileage']}\n"
-                    f"Modifications: "
-                    f"{active_vehicle['modifications'] or 'Standard or unknown'}"
+                    "Structured build (source of truth):\n"
+                    f"{structured_build_context}\n"
+                    "Legacy modification notes (archive only): "
+                    f"{active_vehicle['modifications'] or 'None'}"
                 )
 
                 with st.spinner(
@@ -1517,25 +1536,496 @@ with workspace_col:
                         )
 
                 with build_tab:
-                    if build_items:
-                        for item in build_items[
-                            :8
-                        ]:
-                            st.markdown(
-                                f"• {item}"
+                    build_a, build_b, build_c = st.columns(
+                        3
+                    )
+
+                    with build_a:
+                        st.metric(
+                            "Installed",
+                            structured_build[
+                                "installed_count"
+                            ],
+                            border=True,
+                        )
+
+                    with build_b:
+                        st.metric(
+                            "Planned",
+                            structured_build[
+                                "planned_count"
+                            ],
+                            border=True,
+                        )
+
+                    with build_c:
+                        known_weight = (
+                            structured_build[
+                                "known_weight_kg"
+                            ]
+                        )
+                        st.metric(
+                            "Known weight",
+                            (
+                                f"{known_weight:.1f} kg"
+                                if known_weight
+                                else "—"
+                            ),
+                            border=True,
+                        )
+
+                    structured_components = (
+                        structured_build[
+                            "components"
+                        ]
+                    )
+
+                    system_names = {
+                        system[
+                            "system_key"
+                        ]: system[
+                            "name"
+                        ]
+                        for system in twin[
+                            "systems"
+                        ]
+                    }
+
+                    if structured_components:
+                        st.markdown(
+                            "##### Current build"
+                        )
+
+                        for component in structured_components:
+                            status = (
+                                component.get(
+                                    "lifecycle_status"
+                                )
+                                or "unknown"
+                            )
+                            system_name = (
+                                system_names.get(
+                                    component.get(
+                                        "system_key"
+                                    ),
+                                    component.get(
+                                        "system_key",
+                                        "Unknown system",
+                                    ),
+                                )
                             )
 
-                        if len(
-                            build_items
-                        ) > 8:
+                            st.markdown(
+                                f"**{component['name']}**"
+                            )
+
+                            component_meta = [
+                                system_name,
+                                status.title(),
+                            ]
+
+                            if component.get(
+                                "manufacturer"
+                            ):
+                                component_meta.append(
+                                    component[
+                                        "manufacturer"
+                                    ]
+                                )
+
+                            if component.get(
+                                "part_number"
+                            ):
+                                component_meta.append(
+                                    component[
+                                        "part_number"
+                                    ]
+                                )
+
+                            if component.get(
+                                "weight_kg"
+                            ) is not None:
+                                component_meta.append(
+                                    f"{component['weight_kg']} kg"
+                                )
+
                             st.caption(
-                                f"+ {len(build_items) - 8} more "
-                                "recorded build notes"
+                                " · ".join(
+                                    str(item)
+                                    for item in component_meta
+                                )
+                            )
+
+                            with st.expander(
+                                f"Edit {component['name']}",
+                            ):
+                                with st.form(
+                                    f"edit_build_component_{component['id']}"
+                                ):
+                                    edit_status = st.selectbox(
+                                        "Lifecycle state",
+                                        [
+                                            "installed",
+                                            "planned",
+                                            "removed",
+                                            "unknown",
+                                        ],
+                                        index=[
+                                            "installed",
+                                            "planned",
+                                            "removed",
+                                            "unknown",
+                                        ].index(
+                                            status
+                                            if status
+                                            in {
+                                                "installed",
+                                                "planned",
+                                                "removed",
+                                                "unknown",
+                                            }
+                                            else "unknown"
+                                        ),
+                                        key=(
+                                            "edit_build_status_"
+                                            f"{component['id']}"
+                                        ),
+                                    )
+                                    edit_manufacturer = st.text_input(
+                                        "Manufacturer",
+                                        value=(
+                                            component.get(
+                                                "manufacturer"
+                                            )
+                                            or ""
+                                        ),
+                                        key=(
+                                            "edit_build_manufacturer_"
+                                            f"{component['id']}"
+                                        ),
+                                    )
+                                    edit_part_number = st.text_input(
+                                        "Part number",
+                                        value=(
+                                            component.get(
+                                                "part_number"
+                                            )
+                                            or ""
+                                        ),
+                                        key=(
+                                            "edit_build_part_"
+                                            f"{component['id']}"
+                                        ),
+                                    )
+                                    edit_weight = st.text_input(
+                                        "Weight (kg)",
+                                        value=(
+                                            str(
+                                                component[
+                                                    "weight_kg"
+                                                ]
+                                            )
+                                            if component.get(
+                                                "weight_kg"
+                                            )
+                                            is not None
+                                            else ""
+                                        ),
+                                        key=(
+                                            "edit_build_weight_"
+                                            f"{component['id']}"
+                                        ),
+                                    )
+                                    edit_notes = st.text_area(
+                                        "Notes",
+                                        value=(
+                                            component.get(
+                                                "notes"
+                                            )
+                                            or ""
+                                        ),
+                                        key=(
+                                            "edit_build_notes_"
+                                            f"{component['id']}"
+                                        ),
+                                    )
+
+                                    save_component = (
+                                        st.form_submit_button(
+                                            "Save component",
+                                            width="stretch",
+                                        )
+                                    )
+
+                                if save_component:
+                                    clean_weight = (
+                                        edit_weight.strip()
+                                    )
+
+                                    try:
+                                        parsed_weight = (
+                                            float(
+                                                clean_weight
+                                            )
+                                            if clean_weight
+                                            else None
+                                        )
+                                    except ValueError:
+                                        st.warning(
+                                            "Weight must be a number in kilograms."
+                                        )
+                                    else:
+                                        try:
+                                            update_vehicle_component(
+                                                supabase,
+                                                component[
+                                                    "id"
+                                                ],
+                                                {
+                                                    "lifecycle_status": edit_status,
+                                                    "manufacturer": (
+                                                        edit_manufacturer.strip()
+                                                        or None
+                                                    ),
+                                                    "part_number": (
+                                                        edit_part_number.strip()
+                                                        or None
+                                                    ),
+                                                    "weight_kg": parsed_weight,
+                                                    "notes": (
+                                                        edit_notes.strip()
+                                                        or None
+                                                    ),
+                                                },
+                                            )
+                                        except Exception as error:
+                                            st.error(
+                                                "The build component could not be updated."
+                                            )
+                                            st.exception(
+                                                error
+                                            )
+                                        else:
+                                            st.rerun()
+
+                            st.markdown(
+                                '<div class="vcg-mini-divider"></div>',
+                                unsafe_allow_html=True,
                             )
                     else:
                         st.caption(
-                            "No modifications recorded yet."
+                            "No structured build components recorded yet."
                         )
+
+                    root_systems = twin[
+                        "systems"
+                    ]
+
+                    if root_systems:
+                        with st.expander(
+                            "＋ Add build component",
+                            expanded=(
+                                not structured_components
+                            ),
+                        ):
+                            system_options = [
+                                system[
+                                    "system_key"
+                                ]
+                                for system in root_systems
+                            ]
+                            system_lookup = {
+                                system[
+                                    "system_key"
+                                ]: system
+                                for system in root_systems
+                            }
+
+                            with st.form(
+                                "add_build_component_form",
+                                clear_on_submit=True,
+                            ):
+                                component_name = st.text_input(
+                                    "Component / modification",
+                                    placeholder=(
+                                        "e.g. BC Racing coilovers"
+                                    ),
+                                )
+                                component_system = st.selectbox(
+                                    "Vehicle system",
+                                    system_options,
+                                    format_func=lambda key: (
+                                        system_lookup[
+                                            key
+                                        ][
+                                            "name"
+                                        ]
+                                    ),
+                                )
+                                component_status = st.selectbox(
+                                    "Lifecycle state",
+                                    [
+                                        "installed",
+                                        "planned",
+                                    ],
+                                )
+                                component_origin = st.selectbox(
+                                    "Origin",
+                                    [
+                                        "Aftermarket",
+                                        "OEM / replacement",
+                                        "Unknown",
+                                    ],
+                                )
+                                component_manufacturer = st.text_input(
+                                    "Manufacturer",
+                                    placeholder="Optional",
+                                )
+                                component_part_number = st.text_input(
+                                    "Part number",
+                                    placeholder="Optional",
+                                )
+                                component_weight = st.text_input(
+                                    "Weight (kg)",
+                                    placeholder=(
+                                        "Optional — leave blank if unknown"
+                                    ),
+                                )
+                                component_notes = st.text_area(
+                                    "Notes",
+                                    placeholder=(
+                                        "Fitment, setup, provenance or other details"
+                                    ),
+                                )
+
+                                add_component = (
+                                    st.form_submit_button(
+                                        "Add to digital twin",
+                                        type="primary",
+                                        width="stretch",
+                                    )
+                                )
+
+                            if add_component:
+                                if not component_name.strip():
+                                    st.warning(
+                                        "Enter a component or modification name."
+                                    )
+                                else:
+                                    clean_weight = (
+                                        component_weight.strip()
+                                    )
+
+                                    try:
+                                        parsed_weight = (
+                                            float(
+                                                clean_weight
+                                            )
+                                            if clean_weight
+                                            else None
+                                        )
+                                    except ValueError:
+                                        st.warning(
+                                            "Weight must be a number in kilograms."
+                                        )
+                                    else:
+                                        origin_map = {
+                                            "Aftermarket": False,
+                                            "OEM / replacement": True,
+                                            "Unknown": None,
+                                        }
+                                        root_system = (
+                                            system_lookup[
+                                                component_system
+                                            ]
+                                        )
+
+                                        component_data = {
+                                            "parent_component_id": root_system[
+                                                "id"
+                                            ],
+                                            "component_type": "component",
+                                            "system_key": component_system,
+                                            "name": component_name.strip(),
+                                            "lifecycle_status": component_status,
+                                            "is_oem": origin_map[
+                                                component_origin
+                                            ],
+                                            "manufacturer": (
+                                                component_manufacturer.strip()
+                                                or None
+                                            ),
+                                            "part_number": (
+                                                component_part_number.strip()
+                                                or None
+                                            ),
+                                            "weight_kg": parsed_weight,
+                                            "notes": (
+                                                component_notes.strip()
+                                                or None
+                                            ),
+                                        }
+
+                                        try:
+                                            saved_component = (
+                                                add_vehicle_component(
+                                                    supabase,
+                                                    st.session_state.auth_user_id,
+                                                    active_vehicle[
+                                                        "id"
+                                                    ],
+                                                    component_data,
+                                                )
+                                            )
+                                        except Exception as error:
+                                            st.error(
+                                                "The build component could not be saved."
+                                            )
+                                            st.exception(
+                                                error
+                                            )
+                                        else:
+                                            try:
+                                                add_vehicle_component_event(
+                                                    supabase,
+                                                    st.session_state.auth_user_id,
+                                                    active_vehicle[
+                                                        "id"
+                                                    ],
+                                                    saved_component[
+                                                        "id"
+                                                    ],
+                                                    "note",
+                                                    notes=(
+                                                        "Added to the VCG structured "
+                                                        "build catalogue. Physical "
+                                                        "installation date/mileage "
+                                                        "was not inferred."
+                                                    ),
+                                                )
+                                            except Exception:
+                                                st.warning(
+                                                    "The component was saved, but its "
+                                                    "catalogue-history note could not "
+                                                    "be recorded."
+                                                )
+
+                                            st.rerun()
+
+                    if build_items:
+                        with st.expander(
+                            "Legacy modification notes"
+                        ):
+                            st.caption(
+                                "Archive only. Structured build data above "
+                                "is now the source Garage AI should trust."
+                            )
+                            for item in build_items[
+                                :12
+                            ]:
+                                st.markdown(
+                                    f"• {item}"
+                                )
 
                 with st.expander(
                     "Manage vehicle"
@@ -1648,7 +2138,7 @@ with workspace_col:
                                 "remove_active_vehicle_photo_"
                                 f"{active_vehicle['id']}"
                             ),
-                            use_container_width=True,
+                            width="stretch",
                         ):
                             try:
                                 remove_vehicle_photo(
@@ -1745,7 +2235,7 @@ with workspace_col:
                             st.form_submit_button(
                                 "Update vehicle",
                                 type="primary",
-                                use_container_width=True,
+                                width="stretch",
                             )
                         )
 
@@ -1828,7 +2318,7 @@ with workspace_col:
                             f"{active_vehicle['id']}"
                         ),
                         disabled=not confirm_delete,
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         try:
                             delete_vehicle(

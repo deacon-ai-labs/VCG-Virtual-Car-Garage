@@ -1,6 +1,10 @@
 import unittest
 
-from digital_twin import twin_snapshot
+from digital_twin import (
+    build_snapshot,
+    format_build_context,
+    twin_snapshot,
+)
 
 
 class TestDigitalTwin(unittest.TestCase):
@@ -73,6 +77,78 @@ class TestDigitalTwin(unittest.TestCase):
         self.assertEqual(
             snapshot["verified_spec_count"],
             1,
+        )
+
+    def test_build_snapshot_counts_states_and_known_weight(self):
+        snapshot = build_snapshot(
+            [
+                {
+                    "component_type": "system",
+                    "name": "Suspension",
+                },
+                {
+                    "component_type": "component",
+                    "name": "Coilovers",
+                    "lifecycle_status": "installed",
+                    "weight_kg": 12.5,
+                    "quantity": 1,
+                },
+                {
+                    "component_type": "component",
+                    "name": "Planned brace",
+                    "lifecycle_status": "planned",
+                    "weight_kg": 3,
+                    "quantity": 1,
+                },
+            ]
+        )
+
+        self.assertEqual(
+            snapshot["installed_count"],
+            1,
+        )
+        self.assertEqual(
+            snapshot["planned_count"],
+            1,
+        )
+        self.assertEqual(
+            snapshot["known_weight_kg"],
+            15.5,
+        )
+
+    def test_format_build_context_includes_only_active_components(self):
+        context = format_build_context(
+            [
+                {
+                    "component_type": "component",
+                    "name": "K100 ECU",
+                    "lifecycle_status": "installed",
+                    "system_key": "engine",
+                    "manufacturer": None,
+                    "part_number": None,
+                    "weight_kg": None,
+                    "is_oem": False,
+                },
+                {
+                    "component_type": "component",
+                    "name": "Old exhaust",
+                    "lifecycle_status": "removed",
+                    "system_key": "exhaust",
+                },
+            ]
+        )
+
+        self.assertIn(
+            "K100 ECU",
+            context,
+        )
+        self.assertIn(
+            "origin=aftermarket",
+            context,
+        )
+        self.assertNotIn(
+            "Old exhaust",
+            context,
         )
 
 

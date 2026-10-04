@@ -1,15 +1,37 @@
+import os
+
 from database import get_supabase_client
 
 
-def sign_up(email: str, password: str):
-    """Create a new Supabase user with email and password."""
+DEFAULT_SIGNUP_REDIRECT_URL = (
+    "https://virtual-car-garage.streamlit.app/"
+)
+
+
+def sign_up(
+    email: str,
+    password: str,
+    redirect_url: str | None = None,
+):
+    """Create a Supabase user and send confirmation back to deployed VCG."""
 
     client = get_supabase_client()
+
+    confirmation_redirect = (
+        redirect_url
+        or os.getenv(
+            "VCG_PUBLIC_URL",
+            DEFAULT_SIGNUP_REDIRECT_URL,
+        )
+    )
 
     return client.auth.sign_up(
         {
             "email": email,
             "password": password,
+            "options": {
+                "email_redirect_to": confirmation_redirect,
+            },
         }
     )
 
@@ -71,6 +93,21 @@ def user_auth_error_message(
         return (
             "VCG authentication is temporarily misconfigured. "
             "The Supabase API key used by this environment is not valid."
+        )
+
+    rate_limit_markers = (
+        "email rate limit exceeded",
+        "over_email_send_rate_limit",
+    )
+
+    if any(
+        marker in message
+        for marker in rate_limit_markers
+    ):
+        return (
+            "VCG's confirmation-email service is temporarily rate-limited. "
+            "Your account was not created. Please try again after the email "
+            "quota resets."
         )
 
     credential_markers = (

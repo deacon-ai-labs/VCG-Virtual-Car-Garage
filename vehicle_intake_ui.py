@@ -57,7 +57,7 @@ def render_new_vehicle_intake_form(
     ):
         profile_name = st.text_input(
             "Car name",
-            placeholder="My EP3",
+            placeholder="e.g. Weekend car",
         )
 
         id_left, id_right = st.columns(
@@ -78,12 +78,12 @@ def render_new_vehicle_intake_form(
 
         manufacturer = st.text_input(
             "Manufacturer",
-            placeholder="Honda",
+            placeholder="e.g. Honda",
         )
 
         model = st.text_input(
             "Model / variant",
-            placeholder="Civic Type R EP3",
+            placeholder="e.g. Civic Type R EP3",
         )
 
         year_col, mileage_col = st.columns(
@@ -96,7 +96,8 @@ def render_new_vehicle_intake_form(
                 min_value=1900,
                 max_value=2100,
                 step=1,
-                value=2004,
+                value=None,
+                placeholder="e.g. 2004",
             )
 
         with mileage_col:
@@ -109,7 +110,7 @@ def render_new_vehicle_intake_form(
 
         engine = st.text_input(
             "Engine",
-            placeholder="2.0-litre K20A2",
+            placeholder="e.g. K20A2 / 2.0L petrol",
         )
 
         submitted = st.form_submit_button(
@@ -125,6 +126,13 @@ def render_new_vehicle_intake_form(
         "Car name": profile_name,
         "Manufacturer": manufacturer,
         "Model / variant": model,
+        "Year": (
+            str(
+                year
+            )
+            if year is not None
+            else ""
+        ),
         "Engine": engine,
     }
 

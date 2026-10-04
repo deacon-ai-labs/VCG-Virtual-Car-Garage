@@ -48,6 +48,7 @@ from database import (
 from garage_ai import ask_ai
 from maintenance_os import maintenance_health_snapshot
 from maintenance_ui import render_maintenance_os
+from onboarding_ui import render_first_run_onboarding
 from public_garage_repository import (
     ensure_public_garage_snapshot,
     fetch_public_garage,
@@ -273,9 +274,23 @@ def show_auth_screen() -> None:
         render_wordmark()
 
         st.markdown(
-            '<div class="vcg-auth-kicker">'
-            'Sign in to your garage'
-            '</div>',
+            """
+            <div class="vcg-auth-kicker">YOUR CAR. DIGITALLY.</div>
+            <div class="vcg-auth-title">
+                Build a living Virtual Twin of your real car.
+            </div>
+            <div class="vcg-auth-copy">
+                Keep the build, evidence and ownership context in one place.
+                Use Garage AI when you need help, and share only what you choose.
+            </div>
+            <div class="vcg-auth-feature-row">
+                <span>Virtual Twin</span>
+                <span>Garage AI</span>
+                <span>Maintenance</span>
+                <span>Diagnostics</span>
+                <span>Public Garage</span>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
@@ -402,8 +417,7 @@ def show_auth_screen() -> None:
         st.markdown(
             """
             <div class="vcg-auth-note">
-                Secure email/password access.
-                Social login is intentionally not enabled.
+                Your garage is private by default. Public sharing is opt-in.
             </div>
             """,
             unsafe_allow_html=True,
@@ -572,6 +586,74 @@ except Exception as error:
         error,
         context="Public garage snapshot refresh failed",
     )
+
+
+if not vehicles:
+    first_run_brand, first_run_account = st.columns(
+        [5.2, 1.8],
+        gap="large",
+        vertical_alignment="center",
+    )
+
+    with first_run_brand:
+        render_wordmark()
+
+    with first_run_account:
+        account_text, signout_col = st.columns(
+            [2.2, 1],
+            vertical_alignment="center",
+        )
+
+        with account_text:
+            st.caption(
+                "SIGNED IN"
+            )
+            st.markdown(
+                f"**{st.session_state.auth_user_email}**"
+            )
+
+        with signout_col:
+            if st.button(
+                "Sign out",
+                key="first_run_sign_out",
+                width="stretch",
+            ):
+                try:
+                    sign_out(
+                        supabase
+                    )
+                except Exception:
+                    pass
+
+                clear_app_session()
+                st.rerun()
+
+    st.markdown(
+        '<div class="vcg-top-divider"></div>',
+        unsafe_allow_html=True,
+    )
+
+    first_run_left, first_run_center, first_run_right = st.columns(
+        [1.1, 3.8, 1.1],
+        gap="large",
+    )
+
+    with first_run_center:
+        saved_vehicle = render_first_run_onboarding(
+            client=supabase,
+            owner_id=st.session_state.auth_user_id,
+        )
+
+    if saved_vehicle:
+        st.session_state.active_vehicle_id = (
+            saved_vehicle[
+                "id"
+            ]
+        )
+        st.session_state.active_conversation_id = None
+        st.rerun()
+
+    st.stop()
 
 
 vehicle_ids = [

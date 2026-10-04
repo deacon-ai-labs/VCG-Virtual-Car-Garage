@@ -321,6 +321,99 @@ def apply_global_theme() -> None:
             letter-spacing: -0.02em;
         }}
 
+        .vcg-auth-title {{
+            color: #F4F7FA;
+            font-size: clamp(1.55rem, 2.4vw, 2.25rem);
+            font-weight: 900;
+            letter-spacing: -0.045em;
+            line-height: 1.05;
+            margin: 0.30rem 0 0.45rem 0;
+        }}
+
+        .vcg-auth-copy {{
+            color: #98A7B6;
+            font-size: 0.90rem;
+            line-height: 1.5;
+            margin-bottom: 0.70rem;
+        }}
+
+        .vcg-auth-feature-row {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.38rem;
+            margin-bottom: 0.85rem;
+        }}
+
+        .vcg-auth-feature-row span {{
+            border: 1px solid #2E3D4E;
+            border-radius: 999px;
+            background: rgba(17,26,36,.72);
+            color: #AEBAC7;
+            padding: 0.28rem 0.48rem;
+            font-size: 0.65rem;
+            font-weight: 750;
+        }}
+
+        .vcg-first-run-shell {{
+            padding: 1.25rem 0 0.75rem 0;
+        }}
+
+        .vcg-first-run-kicker {{
+            color: var(--vcg-orange);
+            font-size: 0.70rem;
+            font-weight: 850;
+            letter-spacing: 0.14em;
+        }}
+
+        .vcg-first-run-title {{
+            color: #F4F7FA;
+            font-size: clamp(2rem, 5vw, 3.8rem);
+            font-weight: 900;
+            line-height: 0.98;
+            letter-spacing: -0.055em;
+            max-width: 780px;
+            margin-top: 0.35rem;
+        }}
+
+        .vcg-first-run-copy {{
+            color: #9AA8B7;
+            max-width: 700px;
+            font-size: 0.95rem;
+            line-height: 1.55;
+            margin-top: 0.70rem;
+        }}
+
+        .vcg-first-run-step {{
+            border: 1px solid #29394A;
+            border-radius: 14px;
+            background: rgba(17,26,36,.72);
+            padding: 0.75rem;
+            min-height: 105px;
+            margin-bottom: 0.85rem;
+        }}
+
+        .vcg-first-run-step span {{
+            display: block;
+            color: var(--vcg-orange);
+            font-size: 0.62rem;
+            font-weight: 850;
+            letter-spacing: 0.12em;
+        }}
+
+        .vcg-first-run-step strong {{
+            display: block;
+            color: #F4F7FA;
+            margin-top: 0.25rem;
+            font-size: 0.90rem;
+        }}
+
+        .vcg-first-run-step small {{
+            display: block;
+            color: #8392A1;
+            margin-top: 0.18rem;
+            line-height: 1.35;
+        }}
+
         .vcg-photo-placeholder {{
             width: 100%;
             border-radius: 12px;
@@ -411,13 +504,27 @@ def apply_global_theme() -> None:
 
         @media (max-width: 900px) {{
             .vcg-login-hero {{
-                aspect-ratio: 1095 / 941;
-                min-height: 0;
+                display: none;
             }}
 
-            .vcg-login-hero img {{
-                min-height: 0;
-                object-fit: contain;
+            .vcg-auth-title {{
+                font-size: 1.75rem;
+            }}
+
+            .vcg-auth-copy {{
+                font-size: 0.86rem;
+            }}
+
+            .vcg-first-run-title {{
+                font-size: 2.25rem;
+            }}
+
+            .vcg-first-run-copy {{
+                font-size: 0.88rem;
+            }}
+
+            .vcg-first-run-step {{
+                min-height: 92px;
             }}
         }}
         </style>

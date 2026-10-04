@@ -1004,3 +1004,394 @@ def cancel_build_plan_item(
     )
 
     return response.data
+
+
+
+def get_diagnostic_cases(
+    client: Client,
+    vehicle_id: int,
+) -> list[dict]:
+    """Return diagnostic cases for one vehicle, newest activity first."""
+
+    response = (
+        client.table(
+            "diagnostic_cases"
+        )
+        .select("*")
+        .eq(
+            "vehicle_id",
+            vehicle_id,
+        )
+        .order(
+            "updated_at",
+            desc=True,
+        )
+        .execute()
+    )
+
+    return response.data or []
+
+
+def get_diagnostic_hypotheses(
+    client: Client,
+    vehicle_id: int,
+) -> list[dict]:
+    """Return diagnostic hypotheses for one vehicle."""
+
+    response = (
+        client.table(
+            "diagnostic_hypotheses"
+        )
+        .select("*")
+        .eq(
+            "vehicle_id",
+            vehicle_id,
+        )
+        .order(
+            "sort_order"
+        )
+        .execute()
+    )
+
+    return response.data or []
+
+
+def get_diagnostic_checks(
+    client: Client,
+    vehicle_id: int,
+) -> list[dict]:
+    """Return diagnostic checks for one vehicle."""
+
+    response = (
+        client.table(
+            "diagnostic_checks"
+        )
+        .select("*")
+        .eq(
+            "vehicle_id",
+            vehicle_id,
+        )
+        .order(
+            "sort_order"
+        )
+        .execute()
+    )
+
+    return response.data or []
+
+
+def add_diagnostic_case(
+    client: Client,
+    owner_id: str,
+    vehicle_id: int,
+    case_data: dict,
+) -> dict:
+    """Create one diagnostic investigation."""
+
+    payload = dict(
+        case_data
+    )
+    payload[
+        "owner_id"
+    ] = owner_id
+    payload[
+        "vehicle_id"
+    ] = vehicle_id
+
+    response = (
+        client.table(
+            "diagnostic_cases"
+        )
+        .insert(
+            payload
+        )
+        .select("*")
+        .execute()
+    )
+
+    if not response.data:
+        raise RuntimeError(
+            "Supabase did not return the diagnostic case."
+        )
+
+    return response.data[0]
+
+
+def update_diagnostic_case(
+    client: Client,
+    case_id: str,
+    changes: dict,
+) -> dict:
+    """Update editable diagnostic-case fields."""
+
+    allowed_fields = {
+        "title",
+        "symptom_description",
+        "status",
+        "priority",
+        "drive_risk",
+        "onset_date",
+        "onset_mileage",
+        "operating_conditions",
+        "resolution_summary",
+        "resolved_at",
+    }
+
+    payload = {
+        key: value
+        for key, value in changes.items()
+        if key in allowed_fields
+    }
+
+    response = (
+        client.table(
+            "diagnostic_cases"
+        )
+        .update(
+            payload
+        )
+        .eq(
+            "id",
+            case_id,
+        )
+        .select("*")
+        .execute()
+    )
+
+    if not response.data:
+        raise RuntimeError(
+            "Supabase did not return the updated diagnostic case."
+        )
+
+    return response.data[0]
+
+
+def delete_diagnostic_case(
+    client: Client,
+    case_id: str,
+) -> None:
+    """Delete a diagnostic case and its cascading investigation records."""
+
+    (
+        client.table(
+            "diagnostic_cases"
+        )
+        .delete()
+        .eq(
+            "id",
+            case_id,
+        )
+        .execute()
+    )
+
+
+def add_diagnostic_hypothesis(
+    client: Client,
+    owner_id: str,
+    vehicle_id: int,
+    case_id: str,
+    hypothesis_data: dict,
+) -> dict:
+    """Create a hypothesis inside one diagnostic case."""
+
+    payload = dict(
+        hypothesis_data
+    )
+    payload.update(
+        {
+            "owner_id": owner_id,
+            "vehicle_id": vehicle_id,
+            "case_id": case_id,
+        }
+    )
+
+    response = (
+        client.table(
+            "diagnostic_hypotheses"
+        )
+        .insert(
+            payload
+        )
+        .select("*")
+        .execute()
+    )
+
+    if not response.data:
+        raise RuntimeError(
+            "Supabase did not return the diagnostic hypothesis."
+        )
+
+    return response.data[0]
+
+
+def update_diagnostic_hypothesis(
+    client: Client,
+    hypothesis_id: str,
+    changes: dict,
+) -> dict:
+    """Update editable hypothesis fields."""
+
+    allowed_fields = {
+        "component_id",
+        "title",
+        "rationale",
+        "status",
+        "source_kind",
+        "sort_order",
+    }
+
+    payload = {
+        key: value
+        for key, value in changes.items()
+        if key in allowed_fields
+    }
+
+    response = (
+        client.table(
+            "diagnostic_hypotheses"
+        )
+        .update(
+            payload
+        )
+        .eq(
+            "id",
+            hypothesis_id,
+        )
+        .select("*")
+        .execute()
+    )
+
+    if not response.data:
+        raise RuntimeError(
+            "Supabase did not return the updated diagnostic hypothesis."
+        )
+
+    return response.data[0]
+
+
+def delete_diagnostic_hypothesis(
+    client: Client,
+    hypothesis_id: str,
+) -> None:
+    """Delete a hypothesis; linked checks remain as case evidence."""
+
+    (
+        client.table(
+            "diagnostic_hypotheses"
+        )
+        .delete()
+        .eq(
+            "id",
+            hypothesis_id,
+        )
+        .execute()
+    )
+
+
+def add_diagnostic_check(
+    client: Client,
+    owner_id: str,
+    vehicle_id: int,
+    case_id: str,
+    check_data: dict,
+) -> dict:
+    """Create a planned diagnostic check."""
+
+    payload = dict(
+        check_data
+    )
+    payload.update(
+        {
+            "owner_id": owner_id,
+            "vehicle_id": vehicle_id,
+            "case_id": case_id,
+        }
+    )
+
+    response = (
+        client.table(
+            "diagnostic_checks"
+        )
+        .insert(
+            payload
+        )
+        .select("*")
+        .execute()
+    )
+
+    if not response.data:
+        raise RuntimeError(
+            "Supabase did not return the diagnostic check."
+        )
+
+    return response.data[0]
+
+
+def update_diagnostic_check(
+    client: Client,
+    check_id: str,
+    changes: dict,
+) -> dict:
+    """Update editable diagnostic-check fields."""
+
+    allowed_fields = {
+        "hypothesis_id",
+        "component_id",
+        "title",
+        "check_type",
+        "procedure",
+        "safety_notes",
+        "status",
+        "outcome",
+        "finding",
+        "performed_at",
+        "performed_mileage",
+        "sort_order",
+    }
+
+    payload = {
+        key: value
+        for key, value in changes.items()
+        if key in allowed_fields
+    }
+
+    response = (
+        client.table(
+            "diagnostic_checks"
+        )
+        .update(
+            payload
+        )
+        .eq(
+            "id",
+            check_id,
+        )
+        .select("*")
+        .execute()
+    )
+
+    if not response.data:
+        raise RuntimeError(
+            "Supabase did not return the updated diagnostic check."
+        )
+
+    return response.data[0]
+
+
+def delete_diagnostic_check(
+    client: Client,
+    check_id: str,
+) -> None:
+    """Delete one diagnostic check."""
+
+    (
+        client.table(
+            "diagnostic_checks"
+        )
+        .delete()
+        .eq(
+            "id",
+            check_id,
+        )
+        .execute()
+    )

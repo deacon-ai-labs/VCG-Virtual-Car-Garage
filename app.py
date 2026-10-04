@@ -14,6 +14,11 @@ from build_planner import build_plan_snapshot
 from build_planner_ui import render_build_planner
 from dashboard_state import apply_vehicle_selection
 from dashboard_view import modification_items
+from diagnostics import (
+    diagnostic_vehicle_snapshot,
+    format_diagnostic_context,
+)
+from diagnostics_ui import render_diagnostics_workspace
 from digital_twin import (
     build_snapshot,
     twin_snapshot,
@@ -28,6 +33,9 @@ from database import (
     delete_vehicle,
     get_build_plan_items,
     get_conversations,
+    get_diagnostic_cases,
+    get_diagnostic_checks,
+    get_diagnostic_hypotheses,
     get_messages,
     get_maintenance_items,
     get_maintenance_records,
@@ -101,6 +109,23 @@ def clear_app_session() -> None:
             key,
             None,
         )
+
+    user_state_prefixes = (
+        "diagnostic_case_focus_",
+        "vehicle_workspace_mode_",
+        "workshop_selected_system_",
+    )
+
+    for key in list(
+        st.session_state.keys()
+    ):
+        if key.startswith(
+            user_state_prefixes
+        ):
+            st.session_state.pop(
+                key,
+                None,
+            )
 
 
 def store_auth_session(auth_response) -> bool:
@@ -623,15 +648,77 @@ build_plan = build_plan_snapshot(
     twin_components,
 )
 
+diagnostic_cases = []
+diagnostic_hypotheses = []
+diagnostic_checks = []
+diagnostic_load_failed = False
+
+if active_vehicle:
+    try:
+        diagnostic_cases = get_diagnostic_cases(
+            supabase,
+            active_vehicle["id"],
+        )
+        diagnostic_hypotheses = get_diagnostic_hypotheses(
+            supabase,
+            active_vehicle["id"],
+        )
+        diagnostic_checks = get_diagnostic_checks(
+            supabase,
+            active_vehicle["id"],
+        )
+    except Exception:
+        diagnostic_cases = []
+        diagnostic_hypotheses = []
+        diagnostic_checks = []
+        diagnostic_load_failed = True
+
+diagnostic_snapshot = diagnostic_vehicle_snapshot(
+    diagnostic_cases,
+    diagnostic_hypotheses,
+    diagnostic_checks,
+)
+
+diagnostic_focus_case_id = (
+    st.session_state.get(
+        "diagnostic_case_focus_"
+        f"{active_vehicle['id']}"
+    )
+    if active_vehicle
+    else None
+)
+
+diagnostic_context = (
+    (
+        "Diagnostic investigation data is unavailable in this app run."
+        if diagnostic_load_failed
+        else format_diagnostic_context(
+            diagnostic_cases,
+            diagnostic_hypotheses,
+            diagnostic_checks,
+            twin_components,
+            focus_case_id=(
+                diagnostic_focus_case_id
+            ),
+        )
+    )
+    if active_vehicle
+    else "No vehicle is currently selected."
+)
+
 vehicle_intelligence_context = (
-    build_vehicle_intelligence_context(
-        vehicle=active_vehicle,
-        components=twin_components,
-        specifications=twin_specifications,
-        maintenance_items=maintenance_items,
-        maintenance_records=maintenance_records,
-        component_events=twin_component_events,
-        build_plan_items=build_plan_items,
+    (
+        build_vehicle_intelligence_context(
+            vehicle=active_vehicle,
+            components=twin_components,
+            specifications=twin_specifications,
+            maintenance_items=maintenance_items,
+            maintenance_records=maintenance_records,
+            component_events=twin_component_events,
+            build_plan_items=build_plan_items,
+        )
+        + "\n\nDIAGNOSTIC INVESTIGATIONS — RECORDED CASE STATE:\n"
+        + diagnostic_context
     )
     if active_vehicle
     else "No vehicle is currently selected."
@@ -1174,6 +1261,7 @@ with workspace_col:
             [
                 "Garage AI",
                 "Virtual Workshop",
+                "Diagnostics",
                 "Maintenance OS",
                 "Build Planner",
             ],
@@ -1196,6 +1284,31 @@ with workspace_col:
                     maintenance_items=maintenance_items,
                     maintenance_records=maintenance_records,
                     specifications=twin_specifications,
+                    workspace_state_key=(
+                        "vehicle_workspace_mode_"
+                        f"{active_vehicle['id']}"
+                    ),
+                )
+            st.stop()
+
+        if workspace_mode == "Diagnostics":
+            if diagnostic_load_failed:
+                st.error(
+                    "VCG could not load diagnostic investigations."
+                )
+                st.stop()
+
+            with st.container(
+                key="vcg_diagnostics_scroll"
+            ):
+                render_diagnostics_workspace(
+                    client=supabase,
+                    owner_id=st.session_state.auth_user_id,
+                    vehicle=active_vehicle,
+                    components=twin_components,
+                    cases=diagnostic_cases,
+                    hypotheses=diagnostic_hypotheses,
+                    checks=diagnostic_checks,
                     workspace_state_key=(
                         "vehicle_workspace_mode_"
                         f"{active_vehicle['id']}"
@@ -1258,6 +1371,8 @@ with workspace_col:
                 f"{maintenance['history_count']} history · "
                 f"{twin['verified_spec_count']} verified specs · "
                 f"{len(twin_component_events)} lifecycle events · "
+                f"{diagnostic_snapshot['active_case_count']} active diagnostic "
+                f"case{'' if diagnostic_snapshot['active_case_count'] == 1 else 's'} · "
                 "private Honda library"
             )
 

@@ -797,3 +797,210 @@ def record_maintenance_history(
     )
 
     return response.data
+
+
+def get_build_plan_items(
+    client: Client,
+    vehicle_id: int,
+) -> list[dict]:
+    """Return build-plan items for one visible vehicle."""
+
+    response = (
+        client.table(
+            "vehicle_build_plan_items"
+        )
+        .select("*")
+        .eq(
+            "vehicle_id",
+            vehicle_id,
+        )
+        .order(
+            "sort_order"
+        )
+        .execute()
+    )
+
+    return response.data or []
+
+
+def create_build_plan_install(
+    client: Client,
+    vehicle_id: int,
+    parent_system_id: str,
+    name: str,
+    manufacturer: str | None = None,
+    part_number: str | None = None,
+    weight_kg: float | None = None,
+    is_oem: bool | None = None,
+    plan_status: str = "planned",
+    priority: str = "normal",
+    estimated_cost_gbp: float | None = None,
+    compatibility_status: str = "unknown",
+    compatibility_notes: str | None = None,
+    target_date=None,
+    notes: str | None = None,
+):
+    """Atomically create a planned component and installation plan."""
+
+    response = (
+        client.rpc(
+            "create_build_plan_install",
+            {
+                "p_vehicle_id": vehicle_id,
+                "p_parent_system_id": parent_system_id,
+                "p_name": name,
+                "p_manufacturer": manufacturer,
+                "p_part_number": part_number,
+                "p_weight_kg": weight_kg,
+                "p_is_oem": is_oem,
+                "p_plan_status": plan_status,
+                "p_priority": priority,
+                "p_estimated_cost_gbp": estimated_cost_gbp,
+                "p_compatibility_status": compatibility_status,
+                "p_compatibility_notes": compatibility_notes,
+                "p_target_date": (
+                    target_date.isoformat()
+                    if target_date
+                    else None
+                ),
+                "p_notes": notes,
+            },
+        )
+        .execute()
+    )
+
+    return response.data
+
+
+def create_build_plan_removal(
+    client: Client,
+    component_id: str,
+    plan_status: str = "planned",
+    priority: str = "normal",
+    estimated_cost_gbp: float | None = None,
+    target_date=None,
+    notes: str | None = None,
+):
+    """Atomically create a removal plan for an installed component."""
+
+    response = (
+        client.rpc(
+            "create_build_plan_removal",
+            {
+                "p_component_id": component_id,
+                "p_plan_status": plan_status,
+                "p_priority": priority,
+                "p_estimated_cost_gbp": estimated_cost_gbp,
+                "p_target_date": (
+                    target_date.isoformat()
+                    if target_date
+                    else None
+                ),
+                "p_notes": notes,
+            },
+        )
+        .execute()
+    )
+
+    return response.data
+
+
+def update_build_plan_item(
+    client: Client,
+    plan_item_id: str,
+    changes: dict,
+) -> dict:
+    """Update editable planning metadata without changing the physical action."""
+
+    allowed_fields = {
+        "status",
+        "priority",
+        "estimated_cost_gbp",
+        "compatibility_status",
+        "compatibility_notes",
+        "target_date",
+        "notes",
+        "sort_order",
+    }
+
+    plan_changes = {
+        key: value
+        for key, value in changes.items()
+        if key in allowed_fields
+    }
+
+    plan_changes[
+        "updated_at"
+    ] = datetime.now(
+        timezone.utc
+    ).isoformat()
+
+    response = (
+        client.table(
+            "vehicle_build_plan_items"
+        )
+        .update(
+            plan_changes
+        )
+        .eq(
+            "id",
+            plan_item_id,
+        )
+        .select("*")
+        .execute()
+    )
+
+    if not response.data:
+        raise RuntimeError(
+            "Supabase did not return the updated build plan."
+        )
+
+    return response.data[0]
+
+
+def complete_build_plan_item(
+    client: Client,
+    plan_item_id: str,
+    completed_at,
+    mileage: int | None = None,
+    actual_cost_gbp: float | None = None,
+    notes: str | None = None,
+):
+    """Atomically apply a planned install/removal to the physical twin."""
+
+    response = (
+        client.rpc(
+            "complete_build_plan_item",
+            {
+                "p_plan_item_id": plan_item_id,
+                "p_completed_at": completed_at.isoformat(),
+                "p_mileage": mileage,
+                "p_actual_cost_gbp": actual_cost_gbp,
+                "p_notes": notes,
+            },
+        )
+        .execute()
+    )
+
+    return response.data
+
+
+def cancel_build_plan_item(
+    client: Client,
+    plan_item_id: str,
+    notes: str | None = None,
+):
+    """Cancel an active plan without altering an installed component."""
+
+    response = (
+        client.rpc(
+            "cancel_build_plan_item",
+            {
+                "p_plan_item_id": plan_item_id,
+                "p_notes": notes,
+            },
+        )
+        .execute()
+    )
+
+    return response.data

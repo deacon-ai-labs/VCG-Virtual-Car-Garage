@@ -126,7 +126,16 @@ def ask_ai(
         "modifications. Do not assume those modifications change an "
         "OEM specification unless the available information proves it.\n"
         "- Distinguish clearly between the vehicle's documented OEM "
-        "specification and any advice relating to aftermarket parts."
+        "specification and any advice relating to aftermarket parts.\n"
+        "- Treat CURRENT PHYSICAL STRUCTURED BUILD as the fitted/removed "
+        "state of the real vehicle.\n"
+        "- Treat ACTIVE FUTURE BUILD PLAN as hypothetical future intent "
+        "only. Never describe a planned installation as fitted, or a "
+        "planned removal as already removed.\n"
+        "- A build-plan compatibility status or note is planning metadata, "
+        "not technical proof. Verify compatibility from authoritative "
+        "documentation, measurements, or other reliable evidence before "
+        "presenting it as established fact."
     )
 
     request = {

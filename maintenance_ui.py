@@ -135,7 +135,13 @@ def _component_options(
     components: list[dict],
 ) -> tuple[list[str], dict[str, str]]:
     ordered = sorted(
-        components,
+        [
+            component
+            for component in components
+            if component.get(
+                "lifecycle_status"
+            ) != "cancelled"
+        ],
         key=lambda component: (
             component.get(
                 "sort_order",

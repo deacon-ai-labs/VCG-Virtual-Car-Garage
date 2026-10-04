@@ -22,7 +22,10 @@ def twin_snapshot(
     mapped_components = [
         component
         for component in components
-        if component.get("component_type") != "system"
+        if (
+            component.get("component_type") != "system"
+            and component.get("lifecycle_status") != "cancelled"
+        )
     ]
 
     installed_components = [
@@ -71,7 +74,10 @@ def build_snapshot(
     build_components = [
         component
         for component in components
-        if component.get("component_type") != "system"
+        if (
+            component.get("component_type") != "system"
+            and component.get("lifecycle_status") != "cancelled"
+        )
     ]
 
     installed = [
@@ -118,7 +124,7 @@ def build_snapshot(
 def format_build_context(
     components: list[dict],
 ) -> str:
-    """Format structured build data for Garage AI without inventing values."""
+    """Format the current physical build for Garage AI."""
 
     build = build_snapshot(
         components
@@ -127,11 +133,7 @@ def format_build_context(
     active = [
         component
         for component in build["components"]
-        if component.get("lifecycle_status")
-        in {
-            "installed",
-            "planned",
-        }
+        if component.get("lifecycle_status") == "installed"
     ]
 
     if not active:

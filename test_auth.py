@@ -23,6 +23,35 @@ class TestAuth(unittest.TestCase):
             {
                 "email": "deacon@example.com",
                 "password": "example-password",
+                "options": {
+                    "email_redirect_to": (
+                        "https://virtual-car-garage.streamlit.app/"
+                    ),
+                },
+            }
+        )
+
+    @patch("auth.get_supabase_client")
+    def test_sign_up_can_override_confirmation_redirect(
+        self,
+        mock_get_supabase_client,
+    ):
+        client = MagicMock()
+        mock_get_supabase_client.return_value = client
+
+        auth.sign_up(
+            "deacon@example.com",
+            "example-password",
+            redirect_url="https://example.com/",
+        )
+
+        client.auth.sign_up.assert_called_once_with(
+            {
+                "email": "deacon@example.com",
+                "password": "example-password",
+                "options": {
+                    "email_redirect_to": "https://example.com/",
+                },
             }
         )
 
@@ -79,6 +108,28 @@ class TestAuth(unittest.TestCase):
         )
         self.assertNotIn(
             "email and password",
+            message,
+        )
+
+    def test_auth_error_message_identifies_email_rate_limit(self):
+        message = auth.user_auth_error_message(
+            Exception(
+                "429: email rate limit exceeded "
+                "(over_email_send_rate_limit)"
+            ),
+            action="create the account",
+        )
+
+        self.assertIn(
+            "temporarily rate-limited",
+            message,
+        )
+        self.assertIn(
+            "try again",
+            message,
+        )
+        self.assertNotIn(
+            "unexpected error",
             message,
         )
 

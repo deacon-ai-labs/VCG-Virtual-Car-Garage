@@ -14,6 +14,10 @@ from photo_ui import (
     build_photo_uploader_css,
     photo_upload_token,
 )
+from vehicle_intake import (
+    normalize_registration,
+    normalize_vin,
+)
 
 
 def render_vehicle_management(
@@ -162,6 +166,32 @@ def render_vehicle_management(
                     "profile_name"
                 ],
             )
+            identity_left, identity_right = st.columns(
+                2
+            )
+
+            with identity_left:
+                edit_registration = st.text_input(
+                    "Registration",
+                    value=(
+                        vehicle.get(
+                            "registration"
+                        )
+                        or ""
+                    ),
+                )
+
+            with identity_right:
+                edit_vin = st.text_input(
+                    "VIN",
+                    value=(
+                        vehicle.get(
+                            "vin"
+                        )
+                        or ""
+                    ),
+                )
+
             edit_manufacturer = st.text_input(
                 "Manufacturer",
                 value=vehicle[
@@ -222,6 +252,12 @@ def render_vehicle_management(
         if update_submitted:
             updated_vehicle_data = {
                 "profile_name": edit_profile_name.strip(),
+                "registration": normalize_registration(
+                    edit_registration
+                ),
+                "vin": normalize_vin(
+                    edit_vin
+                ),
                 "manufacturer": edit_manufacturer.strip(),
                 "model": edit_model.strip(),
                 "year": int(

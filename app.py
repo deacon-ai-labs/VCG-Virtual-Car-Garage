@@ -24,7 +24,6 @@ from digital_twin import (
 )
 from database import (
     add_message,
-    add_vehicle,
     create_conversation,
     delete_conversation,
     get_build_plan_items,
@@ -52,6 +51,14 @@ from ui_theme import (
     apply_global_theme,
     image_data_uri,
     render_wordmark,
+)
+from vehicle_intake_repository import (
+    get_intake_candidates,
+    get_vehicle_evidence,
+)
+from vehicle_intake_ui import (
+    render_new_vehicle_intake_form,
+    render_vehicle_intake_panel,
 )
 from vehicle_intelligence_context import (
     build_vehicle_intelligence_context,
@@ -488,6 +495,26 @@ active_vehicle = next(
     ),
     None,
 )
+
+
+vehicle_evidence = []
+intake_candidates = []
+intake_load_failed = False
+
+if active_vehicle:
+    try:
+        vehicle_evidence = get_vehicle_evidence(
+            supabase,
+            active_vehicle["id"],
+        )
+        intake_candidates = get_intake_candidates(
+            supabase,
+            active_vehicle["id"],
+        )
+    except Exception:
+        vehicle_evidence = []
+        intake_candidates = []
+        intake_load_failed = True
 
 
 conversations = []
@@ -969,110 +996,17 @@ with garage_col:
                 "＋ Add vehicle",
                 expanded=not vehicles,
             ):
-                with st.form(
-                    "add_vehicle_form",
-                    clear_on_submit=True,
-                ):
-                    profile_name = st.text_input(
-                        "Profile name",
-                        placeholder="My EP3",
-                    )
-                    manufacturer = st.text_input(
-                        "Manufacturer",
-                        placeholder="Honda",
-                    )
-                    model = st.text_input(
-                        "Model",
-                        placeholder="Civic Type R EP3",
-                    )
-                    year = st.number_input(
-                        "Year",
-                        min_value=1900,
-                        max_value=2100,
-                        step=1,
-                        value=2004,
-                    )
-                    engine = st.text_input(
-                        "Engine",
-                        placeholder="2.0-litre K20A2",
-                    )
-                    mileage = st.number_input(
-                        "Mileage",
-                        min_value=0,
-                        step=1000,
-                        value=0,
-                    )
-                    modifications = st.text_area(
-                        "Legacy modification notes (optional)",
-                        placeholder=(
-                            "Enter one modification per line, "
-                            "or leave blank if standard."
-                        ),
-                    )
+                saved_vehicle = render_new_vehicle_intake_form(
+                    client=supabase,
+                    owner_id=st.session_state.auth_user_id,
+                )
 
-                    add_submitted = (
-                        st.form_submit_button(
-                            "Save vehicle",
-                            type="primary",
-                            width="stretch",
-                        )
+                if saved_vehicle:
+                    st.session_state.active_vehicle_id = (
+                        saved_vehicle["id"]
                     )
-
-                if add_submitted:
-                    required_text_fields = {
-                        "Profile name": profile_name,
-                        "Manufacturer": manufacturer,
-                        "Model": model,
-                        "Engine": engine,
-                    }
-
-                    missing_fields = [
-                        field_name
-                        for (
-                            field_name,
-                            field_value,
-                        )
-                        in required_text_fields.items()
-                        if not field_value.strip()
-                    ]
-
-                    if missing_fields:
-                        st.warning(
-                            "Please complete: "
-                            + ", ".join(
-                                missing_fields
-                            )
-                        )
-                    else:
-                        new_vehicle = {
-                            "profile_name": profile_name.strip(),
-                            "manufacturer": manufacturer.strip(),
-                            "model": model.strip(),
-                            "year": int(year),
-                            "engine": engine.strip(),
-                            "mileage": int(mileage),
-                            "modifications": modifications.strip(),
-                        }
-
-                        try:
-                            saved_vehicle = add_vehicle(
-                                supabase,
-                                st.session_state.auth_user_id,
-                                new_vehicle,
-                            )
-                        except Exception as error:
-                            st.error(
-                                "The vehicle could not be saved."
-                            )
-                            st.exception(
-                                error
-                            )
-                        else:
-                            st.session_state.active_vehicle_id = (
-                                saved_vehicle["id"]
-                            )
-                            st.session_state.active_conversation_id = None
-                            st.rerun()
+                    st.session_state.active_conversation_id = None
+                    st.rerun()
 
             if workspace_mode == "Garage AI":
                 st.markdown(
@@ -1232,6 +1166,21 @@ with workspace_col:
                     workspace_state_key=workspace_key,
                     contextual_badges=contextual_badge_counts,
                 )
+
+                st.divider()
+
+                if intake_load_failed:
+                    st.warning(
+                        "VCG could not load vehicle intake/evidence data."
+                    )
+                else:
+                    render_vehicle_intake_panel(
+                        client=supabase,
+                        owner_id=st.session_state.auth_user_id,
+                        vehicle=active_vehicle,
+                        evidence=vehicle_evidence,
+                        candidates=intake_candidates,
+                    )
 
                 st.divider()
 

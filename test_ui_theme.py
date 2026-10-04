@@ -1,3 +1,4 @@
+import re
 import unittest
 
 from ui_theme import dashboard_shell_css
@@ -8,9 +9,39 @@ class TestDashboardShellCss(unittest.TestCase):
     def test_shell_leaves_room_for_chat_composer(self):
         css = dashboard_shell_css()
 
+        marker = ".st-key-vcg_chat_scroll {"
+
         self.assertIn(
-            "calc(100vh - 515px)",
+            marker,
             css,
+        )
+
+        chat_block = (
+            css.split(
+                marker,
+                1,
+            )[1]
+            .split(
+                "}",
+                1,
+            )[0]
+        )
+
+        height_match = re.search(
+            r"height:\s*calc\(100vh - (\d+)px\);",
+            chat_block,
+        )
+
+        self.assertIsNotNone(
+            height_match
+        )
+        self.assertGreaterEqual(
+            int(
+                height_match.group(
+                    1
+                )
+            ),
+            400,
         )
         self.assertNotIn(
             ".block-container {\n            height: 100vh;\n            max-height: 100vh;\n            overflow: hidden;",

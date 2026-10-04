@@ -1,4 +1,3 @@
-from html import escape
 from pathlib import Path
 
 import streamlit as st
@@ -26,11 +25,8 @@ from digital_twin import (
 from database import (
     add_message,
     add_vehicle,
-    add_vehicle_component,
-    add_vehicle_component_event,
     create_conversation,
     delete_conversation,
-    delete_vehicle,
     get_build_plan_items,
     get_conversations,
     get_diagnostic_cases,
@@ -46,23 +42,10 @@ from database import (
     get_vehicles,
     rename_conversation,
     update_conversation_response_id,
-    update_vehicle,
-    update_vehicle_component,
 )
 from garage_ai import ask_ai
-from maintenance_os import (
-    maintenance_due_label,
-    maintenance_health_snapshot,
-)
+from maintenance_os import maintenance_health_snapshot
 from maintenance_ui import render_maintenance_os
-from photo_service import (
-    remove_vehicle_photo,
-    replace_vehicle_photo,
-)
-from photo_ui import (
-    build_photo_uploader_css,
-    photo_upload_token,
-)
 from time_utils import format_local_timestamp
 from ui_theme import (
     apply_dashboard_shell,
@@ -70,10 +53,22 @@ from ui_theme import (
     image_data_uri,
     render_wordmark,
 )
+from vehicle_home import vehicle_home_snapshot
+from vehicle_home_ui import render_vehicle_home
 from vehicle_intelligence_context import (
     build_vehicle_intelligence_context,
 )
+from vehicle_manage_ui import render_vehicle_management
+from vehicle_shell_ui import render_vehicle_command_deck
 from virtual_workshop_ui import render_virtual_workshop
+from workspace_navigation import (
+    normalize_workspace,
+    workspace_badges,
+    workspace_state_key,
+)
+from workspace_navigation_ui import (
+    render_workspace_navigation,
+)
 
 
 st.set_page_config(
@@ -724,6 +719,47 @@ vehicle_intelligence_context = (
     else "No vehicle is currently selected."
 )
 
+workspace_key = (
+    workspace_state_key(
+        active_vehicle[
+            "id"
+        ]
+    )
+    if active_vehicle
+    else None
+)
+
+workspace_mode = (
+    normalize_workspace(
+        st.session_state.get(
+            workspace_key
+        )
+    )
+    if workspace_key
+    else None
+)
+
+if workspace_key:
+    st.session_state[
+        workspace_key
+    ] = workspace_mode
+
+workspace_badge_counts = workspace_badges(
+    maintenance,
+    diagnostic_snapshot,
+    build_plan,
+)
+
+home_snapshot = vehicle_home_snapshot(
+    maintenance=maintenance,
+    diagnostics=diagnostic_snapshot,
+    build_plan=build_plan,
+    twin=twin,
+    structured_build=structured_build,
+    component_events=twin_component_events,
+    maintenance_records=maintenance_records,
+)
+
 
 # ---------- top bar ----------
 top_brand, top_account = st.columns(
@@ -774,7 +810,7 @@ st.markdown(
 if st.session_state.garage_collapsed:
     layout = [0.62, 9.38]
 else:
-    layout = [2.25, 7.75]
+    layout = [1.95, 8.05]
 
 garage_col, workspace_col = st.columns(
     layout,
@@ -1035,136 +1071,149 @@ with garage_col:
                             st.session_state.active_conversation_id = None
                             st.rerun()
 
-            st.markdown(
-                """
-                <div class="vcg-rail-section">
-                    CONVERSATIONS
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            if conversations:
-                for conversation in conversations:
-                    conversation_id = (
-                        conversation["id"]
-                    )
-
-                    title = (
-                        conversation.get(
-                            "title"
+            if workspace_mode == "Garage AI":
+                st.markdown(
+                    """
+                    <div class="vcg-rail-section">
+                        CONVERSATIONS
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+    
+                if conversations:
+                    for conversation in conversations:
+                        conversation_id = (
+                            conversation["id"]
                         )
-                        or "Conversation"
-                    )
-
-                    local_time = format_local_timestamp(
-                        conversation.get(
-                            "updated_at"
-                        ),
-                        browser_timezone,
-                    )
-
-                    button_label = title
-
-                    if local_time:
-                        button_label += (
-                            f" · {local_time}"
+    
+                        title = (
+                            conversation.get(
+                                "title"
+                            )
+                            or "Conversation"
                         )
-
-                    is_active_conversation = (
-                        conversation_id
-                        == st.session_state.active_conversation_id
-                    )
-
-                    if st.button(
-                        button_label,
-                        key=(
-                            "conversation_"
-                            f"{conversation_id}"
-                        ),
-                        type=(
-                            "primary"
-                            if is_active_conversation
-                            else "secondary"
-                        ),
-                        width="stretch",
-                    ):
-                        st.session_state.active_conversation_id = (
+    
+                        local_time = format_local_timestamp(
+                            conversation.get(
+                                "updated_at"
+                            ),
+                            browser_timezone,
+                        )
+    
+                        button_label = title
+    
+                        if local_time:
+                            button_label += (
+                                f" · {local_time}"
+                            )
+    
+                        is_active_conversation = (
                             conversation_id
+                            == st.session_state.active_conversation_id
                         )
-                        st.rerun()
-
-                if active_conversation:
-                    with st.expander(
-                        "Manage conversation"
-                    ):
-                        with st.form(
-                            "rename_conversation_form"
+    
+                        if st.button(
+                            button_label,
+                            key=(
+                                "conversation_"
+                                f"{conversation_id}"
+                            ),
+                            type=(
+                                "primary"
+                                if is_active_conversation
+                                else "secondary"
+                            ),
+                            width="stretch",
                         ):
-                            new_title = st.text_input(
-                                "Conversation name",
-                                value=active_conversation[
-                                    "title"
-                                ],
+                            st.session_state.active_conversation_id = (
+                                conversation_id
                             )
-
-                            rename_submitted = (
-                                st.form_submit_button(
-                                    "Rename",
-                                    width="stretch",
+                            st.rerun()
+    
+                    if active_conversation:
+                        with st.expander(
+                            "Manage conversation"
+                        ):
+                            with st.form(
+                                "rename_conversation_form"
+                            ):
+                                new_title = st.text_input(
+                                    "Conversation name",
+                                    value=active_conversation[
+                                        "title"
+                                    ],
+                                )
+    
+                                rename_submitted = (
+                                    st.form_submit_button(
+                                        "Rename",
+                                        width="stretch",
+                                    )
+                                )
+    
+                            if rename_submitted:
+                                if not new_title.strip():
+                                    st.warning(
+                                        "Conversation name cannot be empty."
+                                    )
+                                else:
+                                    rename_conversation(
+                                        supabase,
+                                        active_conversation[
+                                            "id"
+                                        ],
+                                        new_title,
+                                    )
+                                    st.rerun()
+    
+                            confirm_delete_conversation = (
+                                st.checkbox(
+                                    "Confirm permanent delete",
+                                    key=(
+                                        "confirm_delete_conversation_"
+                                        f"{active_conversation['id']}"
+                                    ),
                                 )
                             )
-
-                        if rename_submitted:
-                            if not new_title.strip():
-                                st.warning(
-                                    "Conversation name cannot be empty."
-                                )
-                            else:
-                                rename_conversation(
+    
+                            if st.button(
+                                "Delete conversation",
+                                key=(
+                                    "delete_conversation_"
+                                    f"{active_conversation['id']}"
+                                ),
+                                disabled=(
+                                    not confirm_delete_conversation
+                                ),
+                                width="stretch",
+                            ):
+                                delete_conversation(
                                     supabase,
                                     active_conversation[
                                         "id"
                                     ],
-                                    new_title,
                                 )
+                                st.session_state.active_conversation_id = None
                                 st.rerun()
-
-                        confirm_delete_conversation = (
-                            st.checkbox(
-                                "Confirm permanent delete",
-                                key=(
-                                    "confirm_delete_conversation_"
-                                    f"{active_conversation['id']}"
-                                ),
-                            )
-                        )
-
-                        if st.button(
-                            "Delete conversation",
-                            key=(
-                                "delete_conversation_"
-                                f"{active_conversation['id']}"
-                            ),
-                            disabled=(
-                                not confirm_delete_conversation
-                            ),
-                            width="stretch",
-                        ):
-                            delete_conversation(
-                                supabase,
-                                active_conversation[
-                                    "id"
-                                ],
-                            )
-                            st.session_state.active_conversation_id = None
-                            st.rerun()
-
+    
+                else:
+                    st.caption(
+                        "No saved conversations yet."
+                    )
+    
             else:
-                st.caption(
-                    "No saved conversations yet."
+                st.markdown(
+                    """
+                    <div class="vcg-rail-section">
+                        VEHICLE OS
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
-
+                st.caption(
+                    "Garage AI conversations appear here when the AI workspace is open."
+                )
 
 # ---------- active vehicle workspace ----------
 with workspace_col:
@@ -1176,102 +1225,44 @@ with workspace_col:
             )
         )
 
-        spotlight_photo, spotlight_info = st.columns(
-            [2.65, 5.35],
-            gap="medium",
-            vertical_alignment="center",
+        render_vehicle_command_deck(
+            vehicle=active_vehicle,
+            photo_url=active_photo_url,
+            maintenance=maintenance,
+            diagnostics=diagnostic_snapshot,
+            build_plan=build_plan,
+            structured_build=structured_build,
         )
 
-        with spotlight_photo:
+        render_workspace_navigation(
+            state_key=workspace_key,
+            current_workspace=workspace_mode,
+            badges=workspace_badge_counts,
+        )
+
+        if workspace_mode == "Vehicle Home":
             with st.container(
-                key="vcg_spotlight_photo"
+                key="vcg_home_scroll"
             ):
-                if active_photo_url:
-                    st.image(
-                        active_photo_url,
-                        width="stretch",
-                    )
-                else:
-                    st.markdown(
-                        """
-                        <div class="vcg-photo-placeholder vcg-photo-spotlight">
-                            <span>🚘</span>
-                            <small>Add a vehicle photo</small>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                render_vehicle_home(
+                    vehicle=active_vehicle,
+                    snapshot=home_snapshot,
+                    structured_build=structured_build,
+                    maintenance=maintenance,
+                    workspace_state_key=workspace_key,
+                )
 
-        spotlight_profile = escape(
-            str(active_vehicle["profile_name"])
-        )
-        spotlight_manufacturer = escape(
-            str(active_vehicle["manufacturer"])
-        )
-        spotlight_model = escape(
-            str(active_vehicle["model"])
-        )
-        spotlight_engine = escape(
-            str(active_vehicle["engine"])
-        )
-
-        with spotlight_info:
-            st.markdown(
-                f"""
-                <div class="vcg-spotlight">
-                    <div class="vcg-section-kicker">ACTIVE VEHICLE</div>
-                    <div class="vcg-spotlight-profile">
-                        {spotlight_profile}
-                    </div>
-                    <div class="vcg-spotlight-title">
-                        {active_vehicle['year']} {spotlight_manufacturer}
-                        {spotlight_model}
-                    </div>
-                    <div class="vcg-spotlight-subtitle">
-                        {spotlight_engine}
-                    </div>
-                    <div class="vcg-status-grid">
-                        <div class="vcg-status-card">
-                            <span>MILEAGE</span>
-                            <strong>{int(active_vehicle['mileage']):,} mi</strong>
-                        </div>
-                        <div class="vcg-status-card">
-                            <span>MAINTENANCE</span>
-                            <strong>{maintenance['state']}</strong>
-                            <small>{maintenance['detail']}</small>
-                        </div>
-                        <div class="vcg-status-card">
-                            <span>BUILD</span>
-                            <strong>{structured_build['installed_count']} installed</strong>
-                            <small>{build_plan['active_count']} planned changes</small>
-                        </div>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        st.markdown(
-            '<div class="vcg-workspace-divider"></div>',
-            unsafe_allow_html=True,
-        )
-
-        workspace_mode = st.radio(
-            "Vehicle workspace",
-            [
-                "Garage AI",
-                "Virtual Workshop",
-                "Diagnostics",
-                "Maintenance OS",
-                "Build Planner",
-            ],
-            horizontal=True,
-            label_visibility="collapsed",
-            key=(
-                "vehicle_workspace_mode_"
-                f"{active_vehicle['id']}"
-            ),
-        )
+                st.divider()
+                st.markdown(
+                    "### Vehicle settings"
+                )
+                render_vehicle_management(
+                    client=supabase,
+                    owner_id=st.session_state.auth_user_id,
+                    vehicle=active_vehicle,
+                    photo_url=active_photo_url,
+                )
+            st.stop()
 
         if workspace_mode == "Virtual Workshop":
             with st.container(
@@ -1317,14 +1308,17 @@ with workspace_col:
             st.stop()
 
         if workspace_mode == "Maintenance OS":
-            render_maintenance_os(
-                client=supabase,
-                owner_id=st.session_state.auth_user_id,
-                vehicle=active_vehicle,
-                items=maintenance_items,
-                records=maintenance_records,
-                components=twin_components,
-            )
+            with st.container(
+                key="vcg_workspace_scroll"
+            ):
+                render_maintenance_os(
+                    client=supabase,
+                    owner_id=st.session_state.auth_user_id,
+                    vehicle=active_vehicle,
+                    items=maintenance_items,
+                    records=maintenance_records,
+                    components=twin_components,
+                )
             st.stop()
 
         if workspace_mode == "Build Planner":
@@ -1334,16 +1328,19 @@ with workspace_col:
                 )
                 st.stop()
 
-            render_build_planner(
-                client=supabase,
-                vehicle=active_vehicle,
-                components=twin_components,
-                plan_items=build_plan_items,
-            )
+            with st.container(
+                key="vcg_workspace_scroll"
+            ):
+                render_build_planner(
+                    client=supabase,
+                    vehicle=active_vehicle,
+                    components=twin_components,
+                    plan_items=build_plan_items,
+                )
             st.stop()
 
         chat_col, intelligence_col = st.columns(
-            [6.35, 3.65],
+            [7.25, 2.75],
             gap="medium",
             vertical_alignment="top",
         )
@@ -1526,7 +1523,7 @@ with workspace_col:
 
                 st.rerun()
 
-        # ---------- vehicle intelligence ----------
+        # ---------- Garage AI context ----------
         with intelligence_col:
             with st.container(
                 key="vcg_insights_scroll"
@@ -1535,612 +1532,105 @@ with workspace_col:
                     """
                     <div class="vcg-section-heading">
                         <div>
-                            <div class="vcg-section-kicker">VEHICLE INTELLIGENCE</div>
-                            <div class="vcg-section-title">At a glance</div>
+                            <div class="vcg-section-kicker">GROUNDING</div>
+                            <div class="vcg-section-title">AI Context</div>
                         </div>
+                        <div class="vcg-live-pill">CONNECTED</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
 
-                (
-                    overview_tab,
-                    twin_tab,
-                    maintenance_tab,
-                    build_tab,
-                ) = st.tabs(
-                    [
-                        "Overview",
-                        "Digital Twin",
-                        "Maintenance",
-                        "Build",
-                    ]
+                context_a, context_b = st.columns(
+                    2
                 )
 
-                with overview_tab:
-                    (
-                        overview_a,
-                        overview_b,
-                        overview_c,
-                    ) = st.columns(
-                        3
-                    )
-
-                    with overview_a:
-                        st.metric(
-                            "Open maintenance",
-                            maintenance[
-                                "pending_count"
-                            ],
-                            border=True,
-                        )
-
-                    with overview_b:
-                        st.metric(
-                            "Twin components",
-                            twin[
-                                "mapped_component_count"
-                            ],
-                            border=True,
-                        )
-
-                    with overview_c:
-                        st.metric(
-                            "Planned changes",
-                            build_plan[
-                                "active_count"
-                            ],
-                            border=True,
-                        )
-
-                    if maintenance[
-                        "overdue_count"
-                    ]:
-                        st.warning(
-                            f"{maintenance['overdue_count']} "
-                            "maintenance item"
-                            f"{'' if maintenance['overdue_count'] == 1 else 's'} "
-                            "have reached a recorded due point."
-                        )
-                    elif maintenance[
-                        "due_soon_count"
-                    ]:
-                        st.warning(
-                            f"{maintenance['due_soon_count']} "
-                            "maintenance item"
-                            f"{'' if maintenance['due_soon_count'] == 1 else 's'} "
-                            "are approaching a recorded due point."
-                        )
-                    elif maintenance[
-                        "pending_count"
-                    ]:
-                        st.info(
-                            "Maintenance is planned with no "
-                            "recorded overdue or due-soon items."
-                        )
-                    else:
-                        st.success(
-                            "No open maintenance items are recorded."
-                        )
-
-                    st.markdown(
-                        "##### Vehicle profile"
-                    )
-                    st.markdown(
-                        f"**Engine:** {spotlight_engine}  \n"
-                        f"**Mileage:** {int(active_vehicle['mileage']):,} mi  \n"
-                        f"**Profile:** {spotlight_profile}"
-                    )
-
-                with twin_tab:
-                    twin_a, twin_b, twin_c = st.columns(
-                        3
-                    )
-
-                    with twin_a:
-                        st.metric(
-                            "Systems",
-                            twin[
-                                "system_count"
-                            ],
-                            border=True,
-                        )
-
-                    with twin_b:
-                        st.metric(
-                            "Mapped parts",
-                            twin[
-                                "mapped_component_count"
-                            ],
-                            border=True,
-                        )
-
-                    with twin_c:
-                        st.metric(
-                            "Verified specs",
-                            twin[
-                                "verified_spec_count"
-                            ],
-                            border=True,
-                        )
-
-                    if twin_load_failed:
-                        st.warning(
-                            "The structured digital twin could not be loaded."
-                        )
-                    else:
-                        st.caption(
-                            "M13 establishes the vehicle structure. "
-                            "Parts and verified specifications are populated "
-                            "as real data is added in later milestones."
-                        )
-
-                        systems = twin[
-                            "systems"
-                        ]
-
-                        if systems:
-                            left_systems, right_systems = st.columns(
-                                2
-                            )
-
-                            for index, system in enumerate(
-                                systems
-                            ):
-                                target = (
-                                    left_systems
-                                    if index % 2 == 0
-                                    else right_systems
-                                )
-
-                                with target:
-                                    mapped_count = (
-                                        twin[
-                                            "counts_by_system"
-                                        ].get(
-                                            system[
-                                                "system_key"
-                                            ],
-                                            0,
-                                        )
-                                    )
-
-                                    st.markdown(
-                                        f"**{system['name']}**"
-                                    )
-                                    st.caption(
-                                        f"{mapped_count} mapped "
-                                        f"component"
-                                        f"{'' if mapped_count == 1 else 's'}"
-                                    )
-                        else:
-                            st.info(
-                                "No digital-twin systems are available "
-                                "for this vehicle yet."
-                            )
-
-                with maintenance_tab:
-                    pending_items = (
-                        maintenance[
-                            "pending_items"
-                        ]
-                    )
-
-                    if pending_items:
-                        for item in pending_items[
-                            :5
-                        ]:
-                            due_label = (
-                                maintenance_due_label(
-                                    item
-                                )
-                            )
-                            st.markdown(
-                                f"**{item['title']}**"
-                            )
-                            st.caption(
-                                f"Due: {due_label}"
-                            )
-
-                            if item.get(
-                                "notes"
-                            ):
-                                st.caption(
-                                    item[
-                                        "notes"
-                                    ]
-                                )
-
-                            st.markdown(
-                                '<div class="vcg-mini-divider"></div>',
-                                unsafe_allow_html=True,
-                            )
-                    else:
-                        st.caption(
-                            "No open maintenance items recorded."
-                        )
-
-                    if maintenance[
-                        "history_count"
-                    ]:
-                        st.caption(
-                            f"{maintenance['history_count']} "
-                            "service-history record"
-                            f"{'' if maintenance['history_count'] == 1 else 's'} "
-                            "stored."
-                        )
-
-                with build_tab:
-                    build_a, build_b = st.columns(
-                        2
-                    )
-
-                    with build_a:
-                        st.metric(
-                            "Installed",
-                            structured_build[
-                                "installed_count"
-                            ],
-                            border=True,
-                        )
-
-                    with build_b:
-                        st.metric(
-                            "Planned changes",
-                            build_plan[
-                                "active_count"
-                            ],
-                            border=True,
-                        )
-
-                    installed_components = (
+                with context_a:
+                    st.metric(
+                        "Fitted",
                         structured_build[
-                            "installed"
-                        ]
-                    )
-
-                    if installed_components:
-                        for component in installed_components[
-                            :8
-                        ]:
-                            st.markdown(
-                                f"**{component['name']}**"
-                            )
-                            st.caption(
-                                str(
-                                    component.get(
-                                        "system_key",
-                                        "Other",
-                                    )
-                                ).replace(
-                                    "_",
-                                    " ",
-                                ).title()
-                            )
-                    else:
-                        st.caption(
-                            "No installed structured components recorded."
-                        )
-
-                    if build_plan[
-                        "active_count"
-                    ]:
-                        st.info(
-                            "Open Build Planner to compare and manage "
-                            "future installs/removals."
-                        )
-
-                with st.expander(
-                    "Manage vehicle"
-                ):
-                    photo_version_key = (
-                        "photo_uploader_version_"
-                        f"{active_vehicle['id']}"
-                    )
-
-                    if photo_version_key not in st.session_state:
-                        st.session_state[
-                            photo_version_key
-                        ] = 0
-
-                    photo_widget_key = (
-                        "active_vehicle_photo_"
-                        f"{active_vehicle['id']}_"
-                        f"{st.session_state[photo_version_key]}"
-                    )
-
-                    st.markdown(
-                        build_photo_uploader_css(
-                            photo_widget_key,
-                            active_photo_url,
-                        ),
-                        unsafe_allow_html=True,
-                    )
-
-                    uploaded_photo = st.file_uploader(
-                        "Vehicle photo",
-                        type=[
-                            "jpg",
-                            "jpeg",
-                            "png",
-                            "webp",
+                            "installed_count"
                         ],
-                        key=photo_widget_key,
-                        label_visibility="collapsed",
-                        help=(
-                            "Add or replace the vehicle photo."
-                        ),
+                        border=True,
+                    )
+                    st.metric(
+                        "Maintenance",
+                        maintenance[
+                            "pending_count"
+                        ],
+                        border=True,
                     )
 
-                    processed_photo_key = (
-                        "processed_photo_upload_"
-                        f"{active_vehicle['id']}"
+                with context_b:
+                    st.metric(
+                        "Diagnostics",
+                        diagnostic_snapshot[
+                            "active_case_count"
+                        ],
+                        border=True,
+                    )
+                    st.metric(
+                        "Verified specs",
+                        twin[
+                            "verified_spec_count"
+                        ],
+                        border=True,
                     )
 
-                    if uploaded_photo is not None:
-                        upload_token = (
-                            photo_upload_token(
-                                uploaded_photo
-                            )
-                        )
+                st.markdown(
+                    "#### Connected evidence"
+                )
+                st.caption(
+                    "Digital twin · build plan · maintenance/history · "
+                    "diagnostic cases · lifecycle events · private Honda library"
+                )
 
-                        if (
-                            st.session_state.get(
-                                processed_photo_key
-                            )
-                            != upload_token
-                        ):
-                            try:
-                                replace_vehicle_photo(
-                                    client=supabase,
-                                    owner_id=(
-                                        st.session_state
-                                        .auth_user_id
-                                    ),
-                                    vehicle_id=(
-                                        active_vehicle[
-                                            "id"
-                                        ]
-                                    ),
-                                    old_photo_path=(
-                                        active_vehicle.get(
-                                            "photo_path"
-                                        )
-                                    ),
-                                    filename=(
-                                        uploaded_photo.name
-                                    ),
-                                    file_bytes=(
-                                        uploaded_photo.getvalue()
-                                    ),
-                                    content_type=(
-                                        uploaded_photo.type
-                                        or "image/jpeg"
-                                    ),
-                                )
-                            except Exception as error:
-                                st.error(
-                                    "The vehicle photo could "
-                                    "not be saved."
-                                )
-                                st.exception(
-                                    error
-                                )
-                            else:
-                                st.session_state[
-                                    processed_photo_key
-                                ] = upload_token
-                                st.rerun()
-
-                    if active_vehicle.get(
-                        "photo_path"
-                    ):
-                        if st.button(
-                            "Remove photo",
-                            key=(
-                                "remove_active_vehicle_photo_"
-                                f"{active_vehicle['id']}"
-                            ),
-                            width="stretch",
-                        ):
-                            try:
-                                remove_vehicle_photo(
-                                    client=supabase,
-                                    vehicle_id=(
-                                        active_vehicle[
-                                            "id"
-                                        ]
-                                    ),
-                                    photo_path=(
-                                        active_vehicle.get(
-                                            "photo_path"
-                                        )
-                                    ),
-                                )
-                            except Exception as error:
-                                st.error(
-                                    "The vehicle photo could "
-                                    "not be removed."
-                                )
-                                st.exception(
-                                    error
-                                )
-                            else:
-                                st.session_state[
-                                    photo_version_key
-                                ] += 1
-                                st.session_state.pop(
-                                    processed_photo_key,
-                                    None,
-                                )
-                                st.rerun()
-
-                    with st.form(
-                        f"edit_vehicle_form_{active_vehicle['id']}",
-                        clear_on_submit=False,
-                    ):
-                        edit_profile_name = st.text_input(
-                            "Profile name",
-                            value=active_vehicle[
-                                "profile_name"
-                            ],
-                        )
-                        edit_manufacturer = st.text_input(
-                            "Manufacturer",
-                            value=active_vehicle[
-                                "manufacturer"
-                            ],
-                        )
-                        edit_model = st.text_input(
-                            "Model",
-                            value=active_vehicle[
-                                "model"
-                            ],
-                        )
-                        edit_year = st.number_input(
-                            "Year",
-                            min_value=1900,
-                            max_value=2100,
-                            step=1,
-                            value=int(
-                                active_vehicle[
-                                    "year"
-                                ]
-                            ),
-                        )
-                        edit_engine = st.text_input(
-                            "Engine",
-                            value=active_vehicle[
-                                "engine"
-                            ],
-                        )
-                        edit_mileage = st.number_input(
-                            "Mileage",
-                            min_value=0,
-                            step=1000,
-                            value=int(
-                                active_vehicle[
-                                    "mileage"
-                                ]
-                            ),
-                        )
-                        edit_modifications = st.text_area(
-                            "Legacy modification notes",
-                            value=(
-                                active_vehicle[
-                                    "modifications"
-                                ]
-                                or ""
-                            ),
-                        )
-
-                        update_submitted = (
-                            st.form_submit_button(
-                                "Update vehicle",
-                                type="primary",
-                                width="stretch",
-                            )
-                        )
-
-                    if update_submitted:
-                        updated_vehicle_data = {
-                            "profile_name": edit_profile_name.strip(),
-                            "manufacturer": edit_manufacturer.strip(),
-                            "model": edit_model.strip(),
-                            "year": int(
-                                edit_year
-                            ),
-                            "engine": edit_engine.strip(),
-                            "mileage": int(
-                                edit_mileage
-                            ),
-                            "modifications": edit_modifications.strip(),
-                        }
-
-                        required_values = [
-                            updated_vehicle_data[
-                                "profile_name"
-                            ],
-                            updated_vehicle_data[
-                                "manufacturer"
-                            ],
-                            updated_vehicle_data[
-                                "model"
-                            ],
-                            updated_vehicle_data[
-                                "engine"
-                            ],
-                        ]
-
-                        if not all(
-                            required_values
-                        ):
-                            st.warning(
-                                "Profile name, manufacturer, "
-                                "model and engine are required."
-                            )
-                        else:
-                            try:
-                                update_vehicle(
-                                    supabase,
-                                    active_vehicle[
-                                        "id"
-                                    ],
-                                    updated_vehicle_data,
-                                )
-                            except Exception as error:
-                                st.error(
-                                    "The vehicle could not be updated."
-                                )
-                                st.exception(
-                                    error
-                                )
-                            else:
-                                st.rerun()
-
-                with st.expander(
-                    "Danger zone"
-                ):
-                    st.warning(
-                        "Deleting this vehicle also removes "
-                        "its related conversations."
-                    )
-
-                    confirm_delete = st.checkbox(
-                        "Confirm permanent delete",
-                        key=(
-                            "confirm_delete_vehicle_"
-                            f"{active_vehicle['id']}"
-                        ),
-                    )
-
-                    if st.button(
-                        "Delete vehicle",
-                        key=(
-                            "delete_vehicle_"
-                            f"{active_vehicle['id']}"
-                        ),
-                        disabled=not confirm_delete,
-                        width="stretch",
-                    ):
-                        try:
-                            delete_vehicle(
-                                supabase,
-                                active_vehicle[
+                if diagnostic_focus_case_id:
+                    focused_case = next(
+                        (
+                            case
+                            for case in diagnostic_cases
+                            if str(
+                                case.get(
                                     "id"
-                                ],
+                                )
                             )
-                        except Exception as error:
-                            st.error(
-                                "The vehicle could not be deleted."
+                            == str(
+                                diagnostic_focus_case_id
                             )
-                            st.exception(
-                                error
+                        ),
+                        None,
+                    )
+
+                    if focused_case:
+                        st.info(
+                            "**Focused diagnostic case**  \n"
+                            + str(
+                                focused_case.get(
+                                    "title",
+                                    "Untitled case",
+                                )
                             )
-                        else:
-                            st.session_state.active_vehicle_id = None
-                            st.session_state.active_conversation_id = None
-                            st.rerun()
+                        )
+
+                if maintenance[
+                    "overdue_count"
+                ]:
+                    st.warning(
+                        f"{maintenance['overdue_count']} recorded maintenance "
+                        "item"
+                        f"{'' if maintenance['overdue_count'] == 1 else 's'} "
+                        "are overdue."
+                    )
+
+                if build_plan[
+                    "active_count"
+                ]:
+                    st.caption(
+                        f"{build_plan['active_count']} future build change"
+                        f"{'' if build_plan['active_count'] == 1 else 's'} "
+                        "are included as planning context, not current state."
+                    )
 
     else:
         st.markdown(

@@ -589,6 +589,169 @@ def dashboard_shell_css() -> str:
             white-space: nowrap;
         }
 
+        .vcg-command-deck {
+            min-height: 132px;
+            border: 1px solid #2A394A;
+            border-radius: 16px;
+            padding: 0.85rem 1rem;
+            background:
+                radial-gradient(
+                    circle at 96% 0%,
+                    rgba(255, 107, 74, 0.11),
+                    transparent 30%
+                ),
+                linear-gradient(
+                    135deg,
+                    rgba(20, 30, 41, 0.98),
+                    rgba(13, 21, 30, 0.98)
+                );
+            box-shadow: 0 14px 34px rgba(0,0,0,0.20);
+        }
+
+        .vcg-command-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .vcg-command-profile {
+            color: var(--vcg-orange);
+            font-size: 0.70rem;
+            font-weight: 850;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+        }
+
+        .vcg-command-title {
+            color: #F4F7FA;
+            font-size: clamp(1.20rem, 1.75vw, 1.65rem);
+            font-weight: 900;
+            letter-spacing: -0.035em;
+            line-height: 1.08;
+            margin-top: 0.10rem;
+        }
+
+        .vcg-command-subtitle {
+            color: #98A7B6;
+            font-size: 0.82rem;
+            margin-top: 0.18rem;
+        }
+
+        .vcg-command-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.45rem;
+            margin-top: 0.72rem;
+        }
+
+        .vcg-command-stat {
+            border-top: 1px solid #2A394A;
+            padding-top: 0.48rem;
+            min-width: 0;
+        }
+
+        .vcg-command-stat span {
+            display: block;
+            color: #718195;
+            font-size: 0.56rem;
+            font-weight: 850;
+            letter-spacing: 0.10em;
+        }
+
+        .vcg-command-stat strong {
+            display: block;
+            color: #F4F7FA;
+            font-size: 0.88rem;
+            margin-top: 0.12rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .vcg-command-stat small {
+            display: block;
+            color: #8898A8;
+            font-size: 0.66rem;
+            margin-top: 0.04rem;
+        }
+
+        .st-key-vcg_command_photo [data-testid="stImage"] img {
+            width: 100%;
+            height: 132px;
+            object-fit: cover;
+            object-position: center;
+            border: 1px solid #2A394A;
+            border-radius: 16px;
+            box-shadow: 0 14px 34px rgba(0,0,0,0.20);
+        }
+
+        .vcg-command-photo-placeholder {
+            height: 132px;
+            min-height: 132px;
+            border-radius: 16px;
+        }
+
+        .st-key-vcg_workspace_nav {
+            border: 1px solid #273646;
+            border-radius: 14px;
+            background: rgba(13, 21, 30, 0.92);
+            padding: 0.38rem;
+            margin: 0.55rem 0 0.72rem 0;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+        }
+
+        .st-key-vcg_workspace_nav .stButton > button {
+            min-height: 40px;
+            border-radius: 9px;
+            font-size: 0.78rem;
+            white-space: nowrap;
+            padding-left: 0.45rem;
+            padding-right: 0.45rem;
+        }
+
+        .vcg-home-hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            border: 1px solid #29394A;
+            border-radius: 16px;
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(20,30,41,0.96),
+                    rgba(12,19,27,0.96)
+                );
+            padding: 1rem 1.1rem;
+            margin-bottom: 0.70rem;
+        }
+
+        .vcg-home-title {
+            color: #F4F7FA;
+            font-size: 1.55rem;
+            font-weight: 900;
+            letter-spacing: -0.035em;
+            line-height: 1.05;
+        }
+
+        .vcg-home-subtitle {
+            color: #8F9EAD;
+            font-size: 0.82rem;
+            margin-top: 0.25rem;
+        }
+
+        .st-key-vcg_garage_scroll [data-testid="stImage"] img {
+            max-height: 92px;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .st-key-vcg_garage_scroll .vcg-photo-small {
+            min-height: 88px;
+            max-height: 88px;
+        }
+
         .vcg-ai-empty {
             border: 1px dashed #334456;
             border-radius: 14px;
@@ -662,10 +825,12 @@ def dashboard_shell_css() -> str:
         Reserve explicit vertical space for the Garage AI header, caption and
         composer. This keeps the prompt visible at normal browser zoom.
         */
+        .st-key-vcg_home_scroll,
+        .st-key-vcg_workspace_scroll,
         .st-key-vcg_workshop_scroll,
         .st-key-vcg_diagnostics_scroll {
-            height: calc(100vh - 405px);
-            max-height: calc(100vh - 405px);
+            height: calc(100vh - 335px);
+            max-height: calc(100vh - 335px);
             min-height: 320px;
             overflow-y: auto;
             overflow-x: hidden;
@@ -675,8 +840,8 @@ def dashboard_shell_css() -> str:
         }
 
         .st-key-vcg_chat_scroll {
-            height: calc(100vh - 515px);
-            max-height: calc(100vh - 515px);
+            height: calc(100vh - 455px);
+            max-height: calc(100vh - 455px);
             min-height: 220px;
             overflow-y: auto;
             overflow-x: hidden;
@@ -688,6 +853,8 @@ def dashboard_shell_css() -> str:
 
         .st-key-vcg_garage_scroll::-webkit-scrollbar,
         .st-key-vcg_insights_scroll::-webkit-scrollbar,
+        .st-key-vcg_home_scroll::-webkit-scrollbar,
+        .st-key-vcg_workspace_scroll::-webkit-scrollbar,
         .st-key-vcg_workshop_scroll::-webkit-scrollbar,
         .st-key-vcg_diagnostics_scroll::-webkit-scrollbar,
         .st-key-vcg_chat_scroll::-webkit-scrollbar {
@@ -696,6 +863,8 @@ def dashboard_shell_css() -> str:
 
         .st-key-vcg_garage_scroll::-webkit-scrollbar-thumb,
         .st-key-vcg_insights_scroll::-webkit-scrollbar-thumb,
+        .st-key-vcg_home_scroll::-webkit-scrollbar-thumb,
+        .st-key-vcg_workspace_scroll::-webkit-scrollbar-thumb,
         .st-key-vcg_workshop_scroll::-webkit-scrollbar-thumb,
         .st-key-vcg_diagnostics_scroll::-webkit-scrollbar-thumb,
         .st-key-vcg_chat_scroll::-webkit-scrollbar-thumb {
@@ -705,6 +874,8 @@ def dashboard_shell_css() -> str:
 
         .st-key-vcg_garage_scroll::-webkit-scrollbar-track,
         .st-key-vcg_insights_scroll::-webkit-scrollbar-track,
+        .st-key-vcg_home_scroll::-webkit-scrollbar-track,
+        .st-key-vcg_workspace_scroll::-webkit-scrollbar-track,
         .st-key-vcg_workshop_scroll::-webkit-scrollbar-track,
         .st-key-vcg_diagnostics_scroll::-webkit-scrollbar-track,
         .st-key-vcg_chat_scroll::-webkit-scrollbar-track {
@@ -725,16 +896,18 @@ def dashboard_shell_css() -> str:
                 max-height: calc(100vh - 135px);
             }
 
+            .st-key-vcg_home_scroll,
+            .st-key-vcg_workspace_scroll,
             .st-key-vcg_workshop_scroll,
             .st-key-vcg_diagnostics_scroll {
-                height: calc(100vh - 370px);
-                max-height: calc(100vh - 370px);
+                height: calc(100vh - 305px);
+                max-height: calc(100vh - 305px);
                 min-height: 260px;
             }
 
             .st-key-vcg_chat_scroll {
-                height: calc(100vh - 485px);
-                max-height: calc(100vh - 485px);
+                height: calc(100vh - 430px);
+                max-height: calc(100vh - 430px);
                 min-height: 180px;
             }
         }
@@ -774,6 +947,8 @@ def dashboard_shell_css() -> str:
 
             .st-key-vcg_garage_scroll,
             .st-key-vcg_insights_scroll,
+            .st-key-vcg_home_scroll,
+            .st-key-vcg_workspace_scroll,
             .st-key-vcg_workshop_scroll,
             .st-key-vcg_diagnostics_scroll {
                 height: auto;
@@ -801,6 +976,18 @@ def dashboard_shell_css() -> str:
 
             .vcg-status-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .vcg-command-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .vcg-command-deck {
+                min-height: 0;
+            }
+
+            .st-key-vcg_workspace_nav [data-testid="stHorizontalBlock"] {
+                flex-wrap: wrap !important;
             }
 
             .vcg-photo-large {

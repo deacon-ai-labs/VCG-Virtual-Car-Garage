@@ -90,3 +90,35 @@ def user_auth_error_message(
         f"VCG could not {action}. "
         "The authentication service returned an unexpected error."
     )
+
+
+
+def signup_password_error(
+    password: str,
+) -> str | None:
+    """Return a user-facing VCG password-policy error, or None."""
+
+    if len(
+        password
+    ) < 12:
+        return (
+            "Use at least 12 characters for your password."
+        )
+
+    if not any(
+        character.isalpha()
+        for character in password
+    ):
+        return (
+            "Include at least one letter in your password."
+        )
+
+    if not any(
+        character.isdigit()
+        for character in password
+    ):
+        return (
+            "Include at least one number in your password."
+        )
+
+    return None

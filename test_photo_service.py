@@ -27,7 +27,7 @@ class TestPhotoService(unittest.TestCase):
             vehicle_id=7,
             old_photo_path="user-1/7/old.jpg",
             filename="new.jpg",
-            file_bytes=b"abc",
+            file_bytes=b"\xff\xd8\xff\xe0",
             content_type="image/jpeg",
         )
 
@@ -66,7 +66,7 @@ class TestPhotoService(unittest.TestCase):
                 vehicle_id=7,
                 old_photo_path="user-1/7/old.jpg",
                 filename="new.jpg",
-                file_bytes=b"abc",
+                file_bytes=b"\xff\xd8\xff\xe0",
                 content_type="image/jpeg",
             )
 

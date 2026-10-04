@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import streamlit as st
+from ui_errors import log_ui_exception
 
-from database import (
-    delete_vehicle,
-    update_vehicle,
-)
+from database import update_vehicle
 from photo_service import (
     remove_vehicle_photo,
     replace_vehicle_photo,
@@ -18,6 +16,9 @@ from vehicle_intake import (
     normalize_registration,
     normalize_vin,
 )
+from vehicle_lifecycle import (
+    delete_vehicle_with_assets,
+)
 
 
 def render_vehicle_management(
@@ -25,6 +26,7 @@ def render_vehicle_management(
     owner_id: str,
     vehicle: dict,
     photo_url: str | None,
+    evidence: list[dict] | None = None,
 ) -> None:
     """Render vehicle settings independently of any feature workspace."""
 
@@ -109,9 +111,7 @@ def render_vehicle_management(
                     st.error(
                         "The vehicle photo could not be saved."
                     )
-                    st.exception(
-                        error
-                    )
+                    log_ui_exception(error)
                 else:
                     st.session_state[
                         processed_photo_key
@@ -143,9 +143,7 @@ def render_vehicle_management(
                     st.error(
                         "The vehicle photo could not be removed."
                     )
-                    st.exception(
-                        error
-                    )
+                    log_ui_exception(error)
                 else:
                     st.session_state[
                         photo_version_key
@@ -304,9 +302,7 @@ def render_vehicle_management(
                     st.error(
                         "The vehicle could not be updated."
                     )
-                    st.exception(
-                        error
-                    )
+                    log_ui_exception(error)
                 else:
                     st.rerun()
 
@@ -314,7 +310,8 @@ def render_vehicle_management(
         "Danger zone"
     ):
         st.warning(
-            "Deleting this vehicle removes its related VCG records."
+            "Deleting this vehicle removes its VCG records and queues "
+            "its private photos/evidence files for permanent deletion."
         )
 
         confirm_delete = st.checkbox(
@@ -335,20 +332,33 @@ def render_vehicle_management(
             width="stretch",
         ):
             try:
-                delete_vehicle(
-                    client,
-                    vehicle[
-                        "id"
-                    ],
+                cleanup_result = delete_vehicle_with_assets(
+                    client=client,
+                    owner_id=owner_id,
+                    vehicle=vehicle,
+                    evidence=(
+                        evidence
+                        or []
+                    ),
                 )
             except Exception as error:
                 st.error(
                     "The vehicle could not be deleted."
                 )
-                st.exception(
-                    error
-                )
+                log_ui_exception(error)
             else:
                 st.session_state.active_vehicle_id = None
                 st.session_state.active_conversation_id = None
+                st.session_state[
+                    "vehicle_delete_notice"
+                ] = (
+                    "Vehicle deleted."
+                    if not cleanup_result[
+                        "failed"
+                    ]
+                    else (
+                        "Vehicle deleted. Private file cleanup is queued "
+                        "and will retry automatically."
+                    )
+                )
                 st.rerun()

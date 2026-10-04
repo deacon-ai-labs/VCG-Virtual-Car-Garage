@@ -600,7 +600,7 @@ class TestDatabase(unittest.TestCase):
             "user-123",
             7,
             "my car.JPG",
-            b"image-bytes",
+            b"\xff\xd8\xff\xe0",
             "image/jpeg",
         )
 
@@ -614,7 +614,10 @@ class TestDatabase(unittest.TestCase):
         bucket.upload.assert_called_once()
         kwargs = bucket.upload.call_args.kwargs
         self.assertEqual(kwargs["path"], path)
-        self.assertEqual(kwargs["file"], b"image-bytes")
+        self.assertEqual(
+            kwargs["file"],
+            b"\xff\xd8\xff\xe0",
+        )
         self.assertEqual(
             kwargs["file_options"]["content-type"],
             "image/jpeg",

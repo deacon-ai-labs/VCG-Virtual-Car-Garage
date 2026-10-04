@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 
 import streamlit as st
+from ui_errors import log_ui_exception
 
 from build_planner import build_plan_snapshot
 from database import (
@@ -691,9 +692,7 @@ def render_build_planner(
                         st.error(
                             "VCG could not update the build plan."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -804,9 +803,7 @@ def render_build_planner(
                         st.error(
                             "VCG could not complete the physical build change."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -841,9 +838,7 @@ def render_build_planner(
                         st.error(
                             "VCG could not cancel the build-plan item."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -1027,9 +1022,7 @@ def render_build_planner(
                             st.error(
                                 "VCG could not create the installation plan."
                             )
-                            st.exception(
-                                error
-                            )
+                            log_ui_exception(error)
                         else:
                             st.rerun()
 
@@ -1156,9 +1149,7 @@ def render_build_planner(
                         st.error(
                             "VCG could not create the removal plan."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 

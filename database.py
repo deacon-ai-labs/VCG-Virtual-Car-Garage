@@ -5,6 +5,10 @@ from uuid import uuid4
 
 from supabase import Client, create_client
 
+from upload_security import (
+    validate_vehicle_photo_upload,
+)
+
 
 def get_supabase_client() -> Client:
     """Create and return a Supabase client."""
@@ -428,6 +432,11 @@ def upload_vehicle_photo(
     content_type: str,
 ) -> str:
     """Upload a private vehicle photo and return its storage path."""
+
+    validate_vehicle_photo_upload(
+        file_bytes,
+        content_type,
+    )
 
     suffix = Path(filename).suffix.lower()
 

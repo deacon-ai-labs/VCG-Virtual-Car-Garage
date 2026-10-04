@@ -94,6 +94,23 @@ class TestAuth(unittest.TestCase):
             message,
         )
 
+    def test_signup_password_policy_rejects_short_or_simple_passwords(self):
+        self.assertIsNotNone(
+            auth.signup_password_error(
+                "short1"
+            )
+        )
+        self.assertIsNotNone(
+            auth.signup_password_error(
+                "abcdefghijklmnop"
+            )
+        )
+        self.assertIsNone(
+            auth.signup_password_error(
+                "very-long-password-123"
+            )
+        )
+
     def test_sign_out_calls_supabase_sign_out(self):
         client = MagicMock()
 

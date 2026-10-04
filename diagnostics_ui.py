@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, time, timezone
 
 import streamlit as st
+from ui_errors import log_ui_exception
 
 from database import (
     add_diagnostic_case,
@@ -347,9 +348,7 @@ def _render_create_case(
             st.error(
                 "VCG could not create the diagnostic case."
             )
-            st.exception(
-                error
-            )
+            log_ui_exception(error)
         else:
             st.session_state[
                 "diagnostic_case_focus_"
@@ -870,9 +869,7 @@ def render_diagnostics_workspace(
                         st.error(
                             "VCG could not update the diagnostic case."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -1075,9 +1072,7 @@ def render_diagnostics_workspace(
                             st.error(
                                 "VCG could not update the hypothesis."
                             )
-                            st.exception(
-                                error
-                            )
+                            log_ui_exception(error)
                         else:
                             st.rerun()
 
@@ -1111,9 +1106,7 @@ def render_diagnostics_workspace(
                         st.error(
                             "VCG could not delete the hypothesis."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -1203,9 +1196,7 @@ def render_diagnostics_workspace(
                         st.error(
                             "VCG could not add the hypothesis."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -1385,9 +1376,7 @@ def render_diagnostics_workspace(
                             st.error(
                                 "VCG could not record the diagnostic finding."
                             )
-                            st.exception(
-                                error
-                            )
+                            log_ui_exception(error)
                         else:
                             st.rerun()
 
@@ -1414,9 +1403,7 @@ def render_diagnostics_workspace(
                         st.error(
                             "VCG could not skip the diagnostic check."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -1450,9 +1437,7 @@ def render_diagnostics_workspace(
                         st.error(
                             "VCG could not delete the diagnostic check."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -1561,9 +1546,7 @@ def render_diagnostics_workspace(
                         st.error(
                             "VCG could not add the diagnostic check."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -1658,9 +1641,7 @@ def render_diagnostics_workspace(
                     st.error(
                         "VCG could not reopen the diagnostic case."
                     )
-                    st.exception(
-                        error
-                    )
+                    log_ui_exception(error)
                 else:
                     st.rerun()
         else:
@@ -1731,9 +1712,7 @@ def render_diagnostics_workspace(
                         st.error(
                             "VCG could not close the diagnostic case."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -1770,9 +1749,7 @@ def render_diagnostics_workspace(
                 st.error(
                     "VCG could not delete the diagnostic case."
                 )
-                st.exception(
-                    error
-                )
+                log_ui_exception(error)
             else:
                 st.session_state.pop(
                     focus_key,

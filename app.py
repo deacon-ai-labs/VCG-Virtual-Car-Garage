@@ -1,12 +1,14 @@
 from pathlib import Path
 
 import streamlit as st
+from ui_errors import log_ui_exception
 
 from auth import (
     create_authenticated_client,
     sign_in,
     sign_out,
     sign_up,
+    signup_password_error,
     user_auth_error_message,
 )
 from build_planner import build_plan_snapshot
@@ -62,6 +64,9 @@ from vehicle_intake_ui import (
 )
 from vehicle_intelligence_context import (
     build_vehicle_intelligence_context,
+)
+from vehicle_lifecycle import (
+    process_pending_storage_cleanup,
 )
 from vehicle_manage_ui import render_vehicle_management
 from virtual_twin_v0 import virtual_twin_v0_snapshot
@@ -288,8 +293,8 @@ def show_auth_screen() -> None:
                     key="sign_up_password",
                     placeholder="Create a password",
                     help=(
-                        "Use a password that meets your "
-                        "Supabase project's password policy."
+                        "Use at least 12 characters with at least "
+                        "one letter and one number."
                     ),
                 )
 
@@ -305,30 +310,39 @@ def show_auth_screen() -> None:
                         "Enter both email and password."
                     )
                 else:
-                    try:
-                        response = sign_up(
-                            new_email.strip(),
-                            new_password,
-                        )
-                    except Exception as error:
-                        st.error(
-                            user_auth_error_message(
-                                error,
-                                action="create the account",
-                            )
+                    password_error = signup_password_error(
+                        new_password
+                    )
+
+                    if password_error:
+                        st.warning(
+                            password_error
                         )
                     else:
-                        if store_auth_session(response):
-                            st.success(
-                                "Account created and signed in."
+                        try:
+                            response = sign_up(
+                                new_email.strip(),
+                                new_password,
                             )
-                            st.rerun()
+                        except Exception as error:
+                            st.error(
+                                user_auth_error_message(
+                                    error,
+                                    action="create the account",
+                                )
+                            )
                         else:
-                            st.success(
-                                "Account created. Confirm the "
-                                "email before signing in if "
-                                "email confirmation is enabled."
-                            )
+                            if store_auth_session(response):
+                                st.success(
+                                    "Account created and signed in."
+                                )
+                                st.rerun()
+                            else:
+                                st.success(
+                                    "Account created. Confirm the "
+                                    "email before signing in if "
+                                    "email confirmation is enabled."
+                                )
 
         st.markdown(
             """
@@ -444,7 +458,30 @@ if "garage_collapsed" not in st.session_state:
     st.session_state.garage_collapsed = False
 
 
+try:
+    process_pending_storage_cleanup(
+        supabase,
+        st.session_state.auth_user_id,
+    )
+except Exception as error:
+    log_ui_exception(
+        error,
+        context="Storage cleanup retry failed",
+    )
+
+
 apply_dashboard_shell()
+
+
+delete_notice = st.session_state.pop(
+    "vehicle_delete_notice",
+    None,
+)
+
+if delete_notice:
+    st.success(
+        delete_notice
+    )
 
 
 try:
@@ -465,7 +502,7 @@ except Exception as error:
         "Virtual Car Garage could not load "
         "your vehicle database."
     )
-    st.exception(error)
+    log_ui_exception(error)
     st.stop()
 
 
@@ -530,7 +567,7 @@ if active_vehicle:
             "Virtual Car Garage could not load "
             "conversation history."
         )
-        st.exception(error)
+        log_ui_exception(error)
         st.stop()
 
 
@@ -571,7 +608,7 @@ if active_conversation:
         st.error(
             "Virtual Car Garage could not load messages."
         )
-        st.exception(error)
+        log_ui_exception(error)
         st.stop()
 
 
@@ -1189,6 +1226,7 @@ with workspace_col:
                     owner_id=st.session_state.auth_user_id,
                     vehicle=active_vehicle,
                     photo_url=active_photo_url,
+                    evidence=vehicle_evidence,
                 )
             st.stop()
 
@@ -1351,9 +1389,7 @@ with workspace_col:
                         st.error(
                             "The conversation could not be created."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                         st.stop()
 
                     st.session_state.active_conversation_id = (
@@ -1378,9 +1414,7 @@ with workspace_col:
                     st.error(
                         "Your message could not be saved."
                     )
-                    st.exception(
-                        error
-                    )
+                    log_ui_exception(error)
                     st.stop()
 
                 vehicle_description = (
@@ -1412,9 +1446,7 @@ with workspace_col:
                         st.error(
                             "Garage AI could not complete the response."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                         st.stop()
 
                 assistant_message = (
@@ -1444,9 +1476,7 @@ with workspace_col:
                         "Garage AI answered, but the response "
                         "could not be saved."
                     )
-                    st.exception(
-                        error
-                    )
+                    log_ui_exception(error)
                     st.stop()
 
                 st.rerun()

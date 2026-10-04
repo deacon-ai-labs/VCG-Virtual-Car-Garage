@@ -6,6 +6,10 @@ from uuid import uuid4
 
 from supabase import Client
 
+from upload_security import (
+    validate_evidence_upload,
+)
+
 
 VEHICLE_EVIDENCE_BUCKET = "vehicle-evidence"
 EVIDENCE_URL_SECONDS = 3600
@@ -98,6 +102,11 @@ def upload_evidence_file(
         raise ValueError(
             "This evidence file type is not supported."
         )
+
+    validate_evidence_upload(
+        file_bytes,
+        content_type,
+    )
 
     storage_path = (
         f"{owner_id}/"

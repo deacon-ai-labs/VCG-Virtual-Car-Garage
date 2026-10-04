@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import streamlit as st
+from ui_errors import log_ui_exception
 
 from database import (
     add_vehicle,
@@ -171,9 +172,7 @@ def render_new_vehicle_intake_form(
         st.error(
             "VCG could not create the vehicle Twin."
         )
-        st.exception(
-            error
-        )
+        log_ui_exception(error)
         return None
 
 
@@ -288,9 +287,7 @@ def _render_evidence_section(
                 st.error(
                     "VCG could not save this evidence."
                 )
-                st.exception(
-                    error
-                )
+                log_ui_exception(error)
             else:
                 st.rerun()
 
@@ -373,9 +370,7 @@ def _render_evidence_section(
                         st.error(
                             "VCG could not delete this evidence."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -472,9 +467,7 @@ def _render_modification_capture(
                 st.error(
                     "VCG could not analyse the modification description."
                 )
-                st.exception(
-                    error
-                )
+                log_ui_exception(error)
             else:
                 st.rerun()
 
@@ -620,9 +613,7 @@ def _render_modification_capture(
             st.error(
                 "VCG could not create the component candidate."
             )
-            st.exception(
-                error
-            )
+            log_ui_exception(error)
         else:
             st.rerun()
 
@@ -824,9 +815,7 @@ def _render_candidate_review(
                     st.error(
                         "VCG could not approve this Twin change."
                     )
-                    st.exception(
-                        error
-                    )
+                    log_ui_exception(error)
                 else:
                     st.rerun()
 
@@ -842,9 +831,7 @@ def _render_candidate_review(
                     st.error(
                         "VCG could not reject this candidate."
                     )
-                    st.exception(
-                        error
-                    )
+                    log_ui_exception(error)
                 else:
                     st.rerun()
 
@@ -993,8 +980,6 @@ def render_vehicle_intake_panel(
                     st.error(
                         "VCG could not finish this vehicle setup."
                     )
-                    st.exception(
-                        error
-                    )
+                    log_ui_exception(error)
                 else:
                     st.rerun()

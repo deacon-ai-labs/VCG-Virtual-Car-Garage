@@ -28,7 +28,7 @@ class TestVehicleManageUI(unittest.TestCase):
             source,
         )
         self.assertIn(
-            "delete_vehicle",
+            "delete_vehicle_with_assets",
             source,
         )
 

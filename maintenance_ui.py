@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 
 import streamlit as st
+from ui_errors import log_ui_exception
 
 from database import (
     add_maintenance_item,
@@ -622,9 +623,7 @@ def render_maintenance_os(
                         st.error(
                             "VCG could not record the completed maintenance."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -871,9 +870,7 @@ def render_maintenance_os(
                         st.error(
                             "VCG could not update the maintenance schedule."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -907,9 +904,7 @@ def render_maintenance_os(
                         st.error(
                             "VCG could not delete the maintenance schedule."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -1146,9 +1141,7 @@ def render_maintenance_os(
                         st.error(
                             "VCG could not create the maintenance schedule."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()
 
@@ -1263,8 +1256,6 @@ def render_maintenance_os(
                         st.error(
                             "VCG could not record the historic maintenance."
                         )
-                        st.exception(
-                            error
-                        )
+                        log_ui_exception(error)
                     else:
                         st.rerun()

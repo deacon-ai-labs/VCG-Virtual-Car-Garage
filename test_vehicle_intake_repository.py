@@ -36,7 +36,7 @@ class TestVehicleIntakeRepository(unittest.TestCase):
                 evidence_type="document",
                 title="Invoice",
                 filename="invoice.pdf",
-                file_bytes=b"pdf",
+                file_bytes=b"%PDF-1.7\n",
                 content_type="application/pdf",
             )
 

@@ -3,6 +3,9 @@ from database import (
     update_vehicle_photo_path,
     upload_vehicle_photo,
 )
+from upload_security import (
+    validate_vehicle_photo_upload,
+)
 
 
 def replace_vehicle_photo(
@@ -15,6 +18,11 @@ def replace_vehicle_photo(
     content_type: str,
 ) -> str:
     """Upload a new photo, persist its path, then remove the old photo."""
+
+    validate_vehicle_photo_upload(
+        file_bytes,
+        content_type,
+    )
 
     new_photo_path = upload_vehicle_photo(
         client,
